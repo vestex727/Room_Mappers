@@ -1,0 +1,51 @@
+enum Direction {
+  N = 0,
+  NW, 
+  W,
+  SW,
+  S,
+  SE,
+  E,
+  NE
+};
+
+enum Direction d;
+
+void turn_cw(){
+  if(d < 1) d++;
+  else d = Direction(0);
+  turn(45);
+}
+
+void turn_ccw(){
+  if(d > 1) d--;
+  else d = Direction(7);
+  turn(-45);
+}
+
+/**TO DO:
+* Add a function to turn the robot "amount" degrees
+* Needs to be in degrees since it is called by turn_cw() and turn_ccw()
+*/
+void turn(int amount){}
+
+
+void steps(int n){
+  for(int i = 0; i < n; i++){
+    step();
+  }
+}
+
+void step(){}
+
+
+void setup() {
+  // put your setup code here, to run once:
+  d = Direction(0);
+
+}
+
+void loop() {
+  // put your main code here, to run repeatedly:
+
+}
