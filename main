@@ -49,7 +49,7 @@ void steps(int n){
 * Distance traveled needs to be consistent 
 */
 void step(){
-  movements.insert(d)
+  movements.insert(d);
 }
 
 
