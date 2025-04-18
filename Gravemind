@@ -1,0 +1,97 @@
+import com.fazecast.jSerialComm.SerialPort;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+
+public class Gravemind {
+    private static SerialPort comPort;
+    private static volatile String lastCommandSent = null;
+    private static JTextField inputField;
+
+    public static void main(String[] args) {
+        setupSerial("COM5", 115200);
+        SwingUtilities.invokeLater(Gravemind::createAndShowGUI);
+    }
+
+    private static void setupSerial(String portName, int baudRate) {
+        comPort = SerialPort.getCommPort(portName);
+        comPort.setBaudRate(baudRate);
+        comPort.setComPortTimeouts(SerialPort.TIMEOUT_READ_SEMI_BLOCKING, 0, 0);
+
+        if (!comPort.openPort()) {
+            System.err.println("Failed to open " + portName);
+            System.exit(1);
+        }
+
+        new Thread(() -> {
+            try {
+                BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(comPort.getInputStream())
+                );
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    String finalLine = line.trim();
+                    if (finalLine.equalsIgnoreCase(lastCommandSent)) {
+                        System.out.println("Confirmed: " + finalLine);
+                        lastCommandSent = null;
+                    } else {
+                        System.out.println("Received (unmatched): " + finalLine);
+                    }
+                }
+            } catch (IOException e) {
+                System.err.println("Error reading from serial port: " + e.getMessage());
+            }
+        }).start();
+
+    }
+
+    private static void createAndShowGUI() {
+        JFrame frame = new JFrame("Gravemind Control Panel");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setSize(400, 350);
+        frame.setLayout(new BorderLayout());
+
+        // Direction buttons
+        JPanel buttonPanel = new JPanel(new GridLayout(2, 3, 5, 5));
+        String[] directions = {"Forward", "Left", "Right", "Backward", "Stop"};
+        for (String direction : directions) {
+            JButton button = new JButton(direction);
+            button.addActionListener((ActionEvent e) -> sendDirection(direction));
+            buttonPanel.add(button);
+        }
+
+        // Message input
+        JPanel inputPanel = new JPanel(new BorderLayout(5, 5));
+        inputField = new JTextField();
+        JButton sendButton = new JButton("Send");
+        sendButton.addActionListener(e -> {
+            String message = inputField.getText().trim();
+            if (!message.isEmpty()) {
+                sendDirection(message);
+                inputField.setText("");
+            }
+        });
+
+        inputPanel.add(inputField, BorderLayout.CENTER);
+        inputPanel.add(sendButton, BorderLayout.EAST);
+
+        // Assemble GUI
+        frame.add(buttonPanel, BorderLayout.NORTH);
+        frame.add(inputPanel, BorderLayout.SOUTH);
+        frame.setVisible(true);
+    }
+
+    private static void sendDirection(String message) {
+        try {
+            comPort.getOutputStream().write((message + "\n").getBytes());
+            comPort.getOutputStream().flush();
+            lastCommandSent = message;
+        } catch (IOException e) {
+            System.err.println("Error sending: " + message);
+        }
+    }
+}
