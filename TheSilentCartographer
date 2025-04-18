@@ -1,0 +1,90 @@
+#include <MeOrion.h>
+
+// Create motor objects for M1 and M2
+MeDCMotor motorLeft(M1);
+MeDCMotor motorRight(M2);
+
+// Movement parameters
+const int moveSpeed = 100; // Speed from -255 to 255
+const int moveTime = 1000; // Duration in milliseconds for each movement increment 
+
+// Encoder pins for Port 2
+const int ENCODER_A = 9;  // Yellow wire
+const int ENCODER_B = 3;  // Green wire
+
+volatile long encoderTicksLeft = 0;  // Tick counter
+
+void setup() {
+  Serial.begin(115200); // For Bluetooth serial communication
+  while (!Serial);
+
+  // Set encoder pins
+  pinMode(ENCODER_A, INPUT_PULLUP);
+  pinMode(ENCODER_B, INPUT_PULLUP);
+
+  // Attach interrupt to ENCODER_B (D3, interrupt 1)
+  attachInterrupt(digitalPinToInterrupt(ENCODER_B), handleEncoderInterrupt, CHANGE);
+
+  Serial.println("USB echo ready.");
+}
+
+/**
+
+*/
+void handleEncoderInterrupt() {
+
+  // Basic quadrature logic: determine direction (optional)
+  bool a = digitalRead(ENCODER_A);
+  bool b = digitalRead(ENCODER_B);
+  
+  if (a == b) { 
+    encoderTicksLeft++;  // Forward 
+  } else {
+    encoderTicksLeft--;  // Backward
+  }
+}
+
+void moveForward() {
+  Serial.println("MOVING FORWARD");
+  motorLeft.run(moveSpeed);
+  motorRight.run(-moveSpeed);
+  Serial.println("CHECKPOINT 1");
+  delay(1000);
+  motorLeft.stop();
+  motorRight.stop();
+  Serial.println("CHECKPOINT 2");
+}
+
+bool moving = false;
+unsigned long moveStartTime = 0;
+
+void loop() {
+  if (Serial.available()) {
+    String input = Serial.readStringUntil('\n');
+    while (Serial.available()) Serial.read(); // Flush
+    input.trim();
+
+    if (input == "PING") {
+      Serial.println("PONG");
+    } 
+    else if (input == "Forward") {
+      Serial.println("MOVING FORWARD");
+      motorLeft.run(moveSpeed);
+      motorRight.run(-moveSpeed);
+      moveStartTime = millis();
+      moving = true;
+    }
+    else {
+      Serial.print("Echo: ");
+      Serial.println(input);
+    }
+  }
+
+  // Stop motors after 75ms of movement
+  if (moving && millis() - moveStartTime >= 1000) {
+    motorLeft.stop();
+    motorRight.stop();
+    Serial.println("Motors stopped after 1000ms");
+    moving = false;
+  }
+}
