@@ -13,7 +13,7 @@ const int ENCODER_LEFT_B = 2; // INT0
 const int ENCODER_RIGHT_A = 9;
 const int ENCODER_RIGHT_B = 3; // INT1
 
-volatile long encoderTicksLeft = 0;
+volatile long encoderTicksLeft = 0;  //506 ticks/rotation
 volatile long encoderTicksRight = 0;
 
 String currentCommand = "";
