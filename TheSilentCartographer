@@ -4,11 +4,14 @@ MeDCMotor motorLeft(M1);
 MeDCMotor motorRight(M2);
 
 const int baseSpeed = 100;
-const int ENCODER_RIGHT_A = 9;
-const int ENCODER_RIGHT_B = 3;
+int correctedLeftSpeed = baseSpeed;
+int correctedRightSpeed = baseSpeed;
 
+// Encoder pins
 const int ENCODER_LEFT_A = 8;
-const int ENCODER_LEFT_B = 2;
+const int ENCODER_LEFT_B = 2; // INT0
+const int ENCODER_RIGHT_A = 9;
+const int ENCODER_RIGHT_B = 3; // INT1
 
 volatile long encoderTicksLeft = 0;
 volatile long encoderTicksRight = 0;
@@ -19,6 +22,7 @@ void setup() {
   Serial.begin(115200);
   while (!Serial);
 
+  // Encoder setup
   pinMode(ENCODER_LEFT_A, INPUT_PULLUP);
   pinMode(ENCODER_LEFT_B, INPUT_PULLUP);
   pinMode(ENCODER_RIGHT_A, INPUT_PULLUP);
@@ -50,71 +54,40 @@ void stopMotors() {
 void resetEncoders() {
   encoderTicksLeft = 0;
   encoderTicksRight = 0;
-  previousError = 0;
-  integralError = 0;
 }
-
-void driveTicks(String direction, long ticks, int speed) {
-  resetEncoders();
-
-  int leftDir = 0;
-  int rightDir = 0;
-
-  if (direction == "Forward") {
-    leftDir = 1;
-    rightDir = -1;
-  } else if (direction == "Backward") {
-    leftDir = -1;
-    rightDir = 1;
-  } else if (direction == "Left") {
-    leftDir = -1;
-    rightDir = -1;
-  } else if (direction == "Right") {
-    leftDir = 1;
-    rightDir = 1;
-  } else {
-    Serial.println("Invalid direction");
-    return;
-  }
-
-  motorLeft.run(speed * leftDir);
-  motorRight.run(speed * rightDir);
-
-  while (true) {
-    long leftError = ticks - abs(encoderTicksLeft);
-    long rightError = ticks - abs(encoderTicksRight);
-
-    if (leftError <= 0) motorLeft.stop();
-    if (rightError <= 0) motorRight.stop();
-
-    if (leftError <= 0 && rightError <= 0) break;
-  }
-
-  motorLeft.stop();
-  motorRight.stop();
-}
-
 
 void loop() {
+  // Handle incoming commands
   if (Serial.available()) {
     String input = Serial.readStringUntil('\n');
-    while (Serial.available()) Serial.read();
-    input.trim(); // Trim pubes
-    Serial.println(input); // Echoes back current input to user
+    while (Serial.available()) Serial.read(); // flush remaining
+    input.trim();
+    Serial.println(input);  // echo for Java confirmation
 
-    resetEncoders(); 
+    resetEncoders(); // reset for fresh movement
 
     if (input == "Stop") {
       stopMotors();
-      currentCommand = "";
+      currentCommand = ""; // ✅ important: clear command to prevent auto-resume
     } else {
       currentCommand = input;
     }
   }
 
+  // Movement logic
   if (currentCommand == "Forward") {
-    driveTicks("Forward", 500, baseSpeed);  // move forward 500 ticks
-    currentCommand = "";
+    int error = encoderTicksLeft - encoderTicksRight;
+    float Kp = 0.5;
+
+    int adjustment = error * Kp;
+    correctedLeftSpeed = baseSpeed - adjustment;
+    correctedRightSpeed = baseSpeed + adjustment;
+
+    correctedLeftSpeed = constrain(correctedLeftSpeed, 0, 255);
+    correctedRightSpeed = constrain(correctedRightSpeed, 0, 255);
+
+    motorLeft.run(correctedLeftSpeed);
+    motorRight.run(-correctedRightSpeed);
   }
 
   else if (currentCommand == "Backward") {
@@ -132,3 +105,4 @@ void loop() {
     motorRight.run(baseSpeed);
   }
 }
+
