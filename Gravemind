@@ -1,202 +1,90 @@
-import com.fazecast.jSerialComm.SerialPort;
-
+import java.util.ArrayList;
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.*;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
+import java.util.ArrayList;
 
-public class Gravemind {
-    // Serial port object for communication
-    private static SerialPort comPort;
 
-    // Last command that was sent to the robot
-    private static volatile int lastCommandSent = -1;
+public class Mapper extends JPanel{
+    double currentDistance;
+    ArrayList<Movements> movements;
 
-    // Text input field for sending custom commands
-    private static JTextField inputField;
+    private double revolutionsToDistance(double revolutions) {return currentDistance = 7 * Math.PI * revolutions;}
 
-    // Stores the current command being sent via keyboard input
-    private static int currentCommand = -1;
+    public void addMovement(double revolutions, Direction direction) {
+        movements.add(new Movements(revolutionsToDistance(revolutions), direction));
+    }
 
-    // Constants for direction command codes
-    private static final int CMD_STOP = 0;
-    private static final int CMD_FORWARD = 1;
-    private static final int CMD_BACKWARD = 2;
-    private static final int CMD_LEFT = 3;
-    private static final int CMD_RIGHT = 4;
+    private int currentX, currentY;
+
+    public Mapper() {
+        this.currentX = 250;  // Start in the center of the panel
+        this.currentY = 250;
+        main(new String[] {});
+    }
+
+    public Mapper(ArrayList<Movements> movements) {
+        this.movements = movements;
+        this.currentX = 250;  // Start in the center of the panel
+        this.currentY = 250;
+    }
+
+    @Override
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+
+        // Set up the graphics (background color and drawing color)
+        g.setColor(Color.BLACK);
+        g.fillRect(0, 0, getWidth(), getHeight());  // Set the background to black
+        g.setColor(Color.WHITE);
+
+        // Draw the origin point
+        g.fillOval(currentX - 5, currentY - 5, 10, 10); // Drawing the origin (starting point)
+
+        // Process each record and draw the corresponding movement
+        for (Movements record : movements) {
+            moveAndDraw(g, (int) record.getDistance(), record.getDirection());
+        }
+    }
+
+    private void moveAndDraw(Graphics g, int distance, Direction direction) {
+        int previousX = currentX;
+        int previousY = currentY;
+
+        // Move based on direction
+        switch (direction) {
+            case NORTH:
+                currentY -= distance;
+                break;
+            case SOUTH:
+                currentY += distance;
+                break;
+            case EAST:
+                currentX += distance;
+                break;
+            case WEST:
+                currentX -= distance;
+                break;
+        }
+
+        // Draw the movement as a line
+        g.drawLine(previousX, previousY, currentX, currentY);
+    }
 
     public static void main(String[] args) {
-        setupSerial("COM5", 115200); // Initialize serial communication
-        SwingUtilities.invokeLater(Gravemind::createAndShowGUI); // Start GUI on event-dispatch thread
-    }
+        // Create some sample records
+        ArrayList<Movements> records = new ArrayList<>();
+        records.add(new Movements(100, Direction.NORTH));
+        records.add(new Movements(50, Direction.EAST));
+        records.add(new Movements(150, Direction.SOUTH));
+        records.add(new Movements(75, Direction.WEST));
 
-    /**
-     * Initializes the serial port connection and starts a thread to read incoming data
-     */
-    private static void setupSerial(String portName, int baudRate) {
-        comPort = SerialPort.getCommPort(portName);
-        comPort.setBaudRate(baudRate);
-        comPort.setComPortTimeouts(SerialPort.TIMEOUT_READ_SEMI_BLOCKING, 0, 0);
 
-        if (!comPort.openPort()) {
-            System.err.println("Failed to open " + portName);
-            System.exit(1);
-        }
-
-        // Start a new thread to continuously read data from the serial port
-        new Thread(() -> {
-            try {
-                InputStream in = comPort.getInputStream();
-                while (true) {
-                    int sync = in.read(); // Read the sync byte
-                    if (sync == 0xAA) { // Confirm sync byte received
-                        byte[] buffer = new byte[12];
-                        int bytesRead = 0;
-
-                        // Read remaining 12 bytes of the packet
-                        while (bytesRead < 12) {
-                            int result = in.read(buffer, bytesRead, 12 - bytesRead);
-                            if (result > 0) {
-                                bytesRead += result;
-                            }
-                        }
-
-                        // Parse the 3 integers using little-endian order
-                        ByteBuffer bb = ByteBuffer.wrap(buffer).order(ByteOrder.LITTLE_ENDIAN);
-                        int input = bb.getInt();      // Command received by Arduino
-                        int ticksLeft = bb.getInt();  // Encoder ticks for left motor
-                        int ticksRight = bb.getInt(); // Encoder ticks for right motor
-
-                        // Print values to console
-                        System.out.printf("Received -> Input: %d | Left: %d | Right: %d%n", input, ticksLeft, ticksRight);
-                    }
-                }
-            } catch (IOException e) {
-                System.err.println("Error reading from serial port: " + e.getMessage());
-            }
-        }).start();
-    }
-
-    /**
-     * Builds and displays the main control GUI with buttons and text input
-     */
-    private static void createAndShowGUI() {
-        JFrame frame = new JFrame("Gravemind Control Panel");
+        // Set up the JFrame to display the map
+        JFrame frame = new JFrame("Visual Map");
+        Mapper mapPanel = new Mapper(records);
+        frame.add(mapPanel);
+        frame.setSize(500, 500);  // Set window size
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(400, 350);
-        frame.setLayout(new BorderLayout());
-
-        // Create directional buttons
-        JPanel buttonPanel = new JPanel(new GridLayout(2, 2, 5, 5));
-        String[] directions = {"Forward", "Left", "Right", "Backward"};
-        for (String direction : directions) {
-            JButton button = new JButton(direction);
-            button.setFocusable(false);
-
-            // Send command when pressed, stop when released
-            button.addMouseListener(new MouseAdapter() {
-                public void mousePressed(MouseEvent e) {
-                    sendDirection(mapDirectionToCode(direction));
-                }
-
-                public void mouseReleased(MouseEvent e) {
-                    sendDirection(CMD_STOP);
-                }
-            });
-            buttonPanel.add(button);
-        }
-
-        // Input field for sending custom integer commands
-        JPanel inputPanel = new JPanel(new BorderLayout(5, 5));
-        inputField = new JTextField();
-        JButton sendButton = new JButton("Send");
-
-        // Parse and send custom command on button click
-        sendButton.addActionListener(e -> {
-            try {
-                int customCommand = Integer.parseInt(inputField.getText().trim());
-                sendDirection(customCommand);
-                inputField.setText(""); // Clear input field
-            } catch (NumberFormatException ex) {
-                System.err.println("Invalid integer input.");
-            }
-        });
-
-        inputPanel.add(inputField, BorderLayout.CENTER);
-        inputPanel.add(sendButton, BorderLayout.EAST);
-
-        // Add button panel and input panel to main frame
-        frame.add(buttonPanel, BorderLayout.NORTH);
-        frame.add(inputPanel, BorderLayout.SOUTH);
-
-        // Handle arrow key input to control the robot
-        frame.addKeyListener(new KeyAdapter() {
-            public void keyPressed(KeyEvent e) {
-                int command = keyToCommand(e.getKeyCode());
-                if (command != -1 && command != currentCommand) {
-                    currentCommand = command;
-                    sendDirection(command);
-                }
-            }
-
-            public void keyReleased(KeyEvent e) {
-                int command = keyToCommand(e.getKeyCode());
-                if (command == currentCommand) {
-                    currentCommand = CMD_STOP;
-                    sendDirection(CMD_STOP);
-                }
-            }
-        });
-
-        // Ensure the frame receives keyboard focus
-        frame.setFocusable(true);
-        frame.requestFocusInWindow();
         frame.setVisible(true);
     }
-
-    /**
-     * Maps arrow key codes to direction commands
-     */
-    private static int keyToCommand(int keyCode) {
-        return switch (keyCode) {
-            case KeyEvent.VK_UP -> CMD_FORWARD;
-            case KeyEvent.VK_DOWN -> CMD_BACKWARD;
-            case KeyEvent.VK_LEFT -> CMD_RIGHT;  // Swapped intentionally
-            case KeyEvent.VK_RIGHT -> CMD_LEFT;  // Swapped intentionally
-            default -> -1; // Invalid key
-        };
-    }
-
-    /**
-     * Maps string direction names to command codes
-     */
-    private static int mapDirectionToCode(String direction) {
-        return switch (direction.toLowerCase()) {
-            case "forward" -> CMD_FORWARD;
-            case "backward" -> CMD_BACKWARD;
-            case "left" -> CMD_LEFT;
-            case "right" -> CMD_RIGHT;
-            default -> CMD_STOP;
-        };
-    }
-
-    /**
-     * Sends a single-byte command over the serial port to the robot
-     */
-    private static void sendDirection(int command) {
-        try {
-            comPort.getOutputStream().write(command);
-            comPort.getOutputStream().flush();
-            lastCommandSent = command;
-        } catch (IOException e) {
-            System.err.println("Error sending command: " + command);
-        }
-    }
 }
-
-
