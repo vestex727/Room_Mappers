@@ -1,0 +1,90 @@
+import java.util.ArrayList;
+import javax.swing.*;
+import java.awt.*;
+import java.util.ArrayList;
+
+
+public class Mapper extends JPanel{
+    double currentDistance;
+    ArrayList<Movements> movements;
+
+    private double revolutionsToDistance(double revolutions) {return currentDistance = 7 * Math.PI * revolutions;}
+
+    public void addMovement(double revolutions, Direction direction) {
+        movements.add(new Movements(revolutionsToDistance(revolutions), direction));
+    }
+
+    private int currentX, currentY;
+
+    public Mapper() {
+        this.currentX = 250;  // Start in the center of the panel
+        this.currentY = 250;
+        main(new String[] {});
+    }
+
+    public Mapper(ArrayList<Movements> movements) {
+        this.movements = movements;
+        this.currentX = 250;  // Start in the center of the panel
+        this.currentY = 250;
+    }
+
+    @Override
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+
+        // Set up the graphics (background color and drawing color)
+        g.setColor(Color.BLACK);
+        g.fillRect(0, 0, getWidth(), getHeight());  // Set the background to black
+        g.setColor(Color.WHITE);
+
+        // Draw the origin point
+        g.fillOval(currentX - 5, currentY - 5, 10, 10); // Drawing the origin (starting point)
+
+        // Process each record and draw the corresponding movement
+        for (Movements record : movements) {
+            moveAndDraw(g, (int) record.getDistance(), record.getDirection());
+        }
+    }
+
+    private void moveAndDraw(Graphics g, int distance, Direction direction) {
+        int previousX = currentX;
+        int previousY = currentY;
+
+        // Move based on direction
+        switch (direction) {
+            case NORTH:
+                currentY -= distance;
+                break;
+            case SOUTH:
+                currentY += distance;
+                break;
+            case EAST:
+                currentX += distance;
+                break;
+            case WEST:
+                currentX -= distance;
+                break;
+        }
+
+        // Draw the movement as a line
+        g.drawLine(previousX, previousY, currentX, currentY);
+    }
+
+    public static void main(String[] args) {
+        // Create some sample records
+        ArrayList<Movements> records = new ArrayList<>();
+        records.add(new Movements(100, Direction.NORTH));
+        records.add(new Movements(50, Direction.EAST));
+        records.add(new Movements(150, Direction.SOUTH));
+        records.add(new Movements(75, Direction.WEST));
+
+
+        // Set up the JFrame to display the map
+        JFrame frame = new JFrame("Visual Map");
+        Mapper mapPanel = new Mapper(records);
+        frame.add(mapPanel);
+        frame.setSize(500, 500);  // Set window size
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setVisible(true);
+    }
+}
