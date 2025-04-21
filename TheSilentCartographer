@@ -11,6 +11,7 @@ const int ENCODER_LEFT_A = 8;
 const int ENCODER_LEFT_B = 2; // INT0
 const int ENCODER_RIGHT_A = 9;
 const int ENCODER_RIGHT_B = 3; // INT1
+const int FULL_ROTATION = 552;
 
 // Encoder counters
 volatile long encoderTicksLeft = 0;
@@ -73,18 +74,44 @@ void stopMotors() {
   motorRight.stop();
 }
 
+
+void driveForwardContinuous(){
+  driveForward();
+}
+
+void driveForward(){
+  resetEncoders();
+  int leftStartingValue = encoderTicksLeft;
+  int rightStartingValue = encoderTicksRight;
+  while((encoderTicksLeft - leftStartingValue) < 1 && (encoderTicksRight - rightStartingValue) < 1){
+    if((encoderTicksLeft - leftStartingValue) < 1){
+      motorLeft.run(baseSpeed);
+    }
+
+    if((encoderTicksRight - rightStartingValue) < 1){
+      motorRight.run(-baseSpeed);
+    }
+  }
+
+  long response[3] = { millis(), encoderTicksLeft, encoderTicksRight };
+  Serial.write(0xAA);
+  Serial.write((uint8_t*)response, sizeof(response));
+
+  resetEncoders();
+}
+
 /**
 * Drive forward when holding up arrow on Java Swing GUI.
-*/
+*
 void driveForwardContinuous() {
   int maxSpeed = baseSpeed; // Only drive as fast as the base speed. Potentially adjust this.
   int minSpeed = 60;
   float kP = 7.5; // Proportional coefficent
-  int rightMotorBoost = 10; // <-- Potentially adjust this value
+  int rightMotorBoost = 0;//10; // <-- Potentially adjust this value
 
   int error = encoderTicksLeft - encoderTicksRight;
   int correction = (int)(kP * error);
-  correction = constrain(correction, -20, 20);
+  //correction = constrain(correction, -20, 20);
 
   int speedLeft = constrain(maxSpeed + correction, minSpeed, maxSpeed);
   int speedRight = constrain(maxSpeed - correction + rightMotorBoost, minSpeed, maxSpeed);
@@ -99,7 +126,7 @@ void driveForwardContinuous() {
 
   motorLeft.run(speedLeft);
   motorRight.run(-speedRight);
-}
+}*/
 
 /**
 * Must limit encoder reference to values only aqquired when reversing.
