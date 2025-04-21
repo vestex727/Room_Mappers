@@ -1,0 +1,231 @@
+import com.fazecast.jSerialComm.SerialPort;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.util.ArrayList;
+
+public class Test {
+    private ArrayList<Movement> movements = new ArrayList<>();
+    private static int keyIsHeldCounter = 0;
+    private static int keyHeld;
+    private static Direction direction = Direction.NORTH;
+
+
+    // Serial port object for communication
+    private static SerialPort comPort;
+
+    // Last command that was sent to the robot
+    private static volatile int lastCommandSent = -1;
+
+    // Text input field for sending custom commands
+    private static JTextField inputField;
+
+    // Stores the current command being sent via keyboard input
+    private static int currentCommand = -1;
+
+    /**
+     * Initializes the serial port connection and starts a thread to read incoming data
+     */
+    private static void setupSerial(String portName, int baudRate) {
+        comPort = SerialPort.getCommPort(portName);
+        comPort.setBaudRate(baudRate);
+        comPort.setComPortTimeouts(SerialPort.TIMEOUT_READ_SEMI_BLOCKING, 0, 0);
+
+        if (!comPort.openPort()) {
+            System.err.println("Failed to open " + portName);
+            System.exit(1);
+        }
+
+        // Start a new thread to continuously read data from the serial port
+        new Thread(() -> {
+            try {
+                InputStream in = comPort.getInputStream();
+                while (true) {
+                    int sync = in.read(); // Read the sync byte
+                    if (sync == 0xAA) { // Confirm sync byte received
+                        byte[] buffer = new byte[12];
+                        int bytesRead = 0;
+
+                        // Read remaining 12 bytes of the packet
+                        while (bytesRead < 12) {
+                            int result = in.read(buffer, bytesRead, 12 - bytesRead);
+                            if (result > 0) {
+                                bytesRead += result;
+                            }
+                        }
+
+                        // Parse the 3 integers using little-endian order
+                        ByteBuffer bb = ByteBuffer.wrap(buffer).order(ByteOrder.LITTLE_ENDIAN);
+                        int input = bb.getInt();      // Command received by Arduino
+                        int ticksLeft = bb.getInt();  // Encoder ticks for left motor
+                        int ticksRight = bb.getInt(); // Encoder ticks for right motor
+
+                        // Print values to console
+                        System.out.printf("Received -> Input: %d | Left: %d | Right: %d%n", input, ticksLeft, ticksRight);
+                    }
+                }
+            } catch (IOException e) {
+                System.err.println("Error reading from serial port: " + e.getMessage());
+            }
+        }).start();
+    }
+
+    /**
+     * Builds and displays the main control GUI with buttons and text input
+     */
+    private static void createAndShowGUI() {
+        JFrame frame = new JFrame("Gravemind Control Panel");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setSize(400, 350);
+        frame.setLayout(new BorderLayout());
+
+        // Create directional buttons
+        JPanel buttonPanel = new JPanel(new GridLayout(2, 2, 5, 5));
+        String[] directions = {"Forward", "Left", "Right", "Backward"};
+        for (String direction : directions) {
+            JButton button = new JButton(direction);
+            button.setFocusable(false);
+
+            // Send command when pressed, stop when released
+            button.addMouseListener(new MouseAdapter() {
+                public void mousePressed(MouseEvent e) {
+                    sendDirection(mapDirectionToCode(direction));
+                }
+
+                public void mouseReleased(MouseEvent e) {
+                    sendDirection(Commands.CMD_STOP.ordinal());
+                }
+            });
+            buttonPanel.add(button);
+        }
+
+        // Input field for sending custom integer commands
+        JPanel inputPanel = new JPanel(new BorderLayout(5, 5));
+        inputField = new JTextField();
+        JButton sendButton = new JButton("Send");
+
+        // Parse and send custom command on button click
+        sendButton.addActionListener(e -> {
+            try {
+                int customCommand = Integer.parseInt(inputField.getText().trim());
+                sendDirection(customCommand);
+                inputField.setText(""); // Clear input field
+            } catch (NumberFormatException ex) {
+                System.err.println("Invalid integer input.");
+            }
+        });
+
+        inputPanel.add(inputField, BorderLayout.CENTER);
+        inputPanel.add(sendButton, BorderLayout.EAST);
+
+        // Add button panel and input panel to main frame
+        frame.add(buttonPanel, BorderLayout.NORTH);
+        frame.add(inputPanel, BorderLayout.SOUTH);
+
+        // Handle arrow key input to control the robot
+        frame.addKeyListener(new KeyAdapter() {
+            public void keyPressed(KeyEvent e) {
+                int command = keyToCommand(e.getKeyCode());
+                if (command != -1 && command != currentCommand) {
+                    currentCommand = command;
+                    sendDirection(command);
+                }
+            }
+
+            public void keyReleased(KeyEvent e) {
+                keyHeld = -1;
+                int command = keyToCommand(e.getKeyCode());
+                if (command == currentCommand) {
+                    currentCommand = Commands.CMD_STOP.ordinal();
+                    sendDirection(Commands.CMD_STOP.ordinal());
+                }
+            }
+        });
+
+        // Ensure the frame receives keyboard focus
+        frame.setFocusable(true);
+        frame.requestFocusInWindow();
+        frame.setVisible(true);
+    }
+
+    /**
+     * Maps arrow/WASD key codes to direction commands
+     * Esc key ends program
+     */
+    private static int keyToCommand(int keyCode) {
+        if(keyCode == KeyEvent.VK_ESCAPE) {System.exit(99);}
+
+        if(keyCode == keyHeld) keyIsHeldCounter++;
+        else keyIsHeldCounter=0;
+
+        keyHeld = keyCode;
+        System.out.println(direction.name());
+
+        switch (keyCode) {
+            case KeyEvent.VK_UP, KeyEvent.VK_W:
+                return Commands.CMD_FORWARD.ordinal();
+            case KeyEvent.VK_DOWN, KeyEvent.VK_S:
+                return Commands.CMD_BACKWARD.ordinal();
+            case KeyEvent.VK_LEFT, KeyEvent.VK_A:
+                if(keyIsHeldCounter == 20) direction = moveLeft(direction);
+                return Commands.CMD_RIGHT.ordinal();  // Swapped intentionally
+            case KeyEvent.VK_RIGHT, KeyEvent.VK_D:
+                if(keyIsHeldCounter == 20) direction = moveRight(direction);
+                return Commands.CMD_LEFT.ordinal();  // Swapped intentionally
+            default:
+                keyHeld = -1; // Invalid key
+
+        };
+        return -1;
+    }
+
+    /**
+     * Maps string direction names to command codes
+     */
+    private static int mapDirectionToCode(String direction) {
+        return switch (direction.toLowerCase()) {
+            case "forward" -> Commands.CMD_FORWARD.ordinal();
+            case "backward" -> Commands.CMD_BACKWARD.ordinal();
+            case "left" -> Commands.CMD_LEFT.ordinal();
+            case "right" -> Commands.CMD_RIGHT.ordinal();
+            default -> Commands.CMD_STOP.ordinal();
+        };
+    }
+
+    /**
+     * Sends a single-byte command over the serial port to the robot
+     */
+    private static void sendDirection(int command) {
+        try {
+            comPort.getOutputStream().write(command);
+            comPort.getOutputStream().flush();
+            lastCommandSent = command;
+        } catch (IOException e) {
+            System.err.println("Error sending command: " + command);
+        }
+    }
+
+    static Direction moveLeft(Direction direction) {
+        if (direction == Direction.NORTH) return Direction.WEST;
+        else if(direction == Direction.EAST) return Direction.NORTH;
+        else if(direction == Direction.SOUTH) return Direction.EAST;
+        return Direction.SOUTH;
+    }
+
+    static Direction moveRight(Direction direction) {
+        if (direction == Direction.NORTH) return Direction.EAST;
+        else if(direction == Direction.EAST) return Direction.SOUTH;
+        else if(direction == Direction.SOUTH) return Direction.WEST;
+        return Direction.NORTH;
+    }
+
+    public static void main(String[] args) {
+        setupSerial("COM4", 115200); // Initialize serial communication
+        SwingUtilities.invokeLater(Test::createAndShowGUI); // Start GUI on event-dispatch thread
+    }
+}
