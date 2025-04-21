@@ -1,28 +1,27 @@
 import java.util.ArrayList;
 import javax.swing.*;
 import java.awt.*;
-import java.util.ArrayList;
 
 
-public class Mapper extends JPanel{
+public class MapGenerator extends JPanel{
     double currentDistance;
-    ArrayList<Movements> movements;
+    ArrayList<Movement> movements;
 
     private double revolutionsToDistance(double revolutions) {return currentDistance = 7 * Math.PI * revolutions;}
 
-    public void addMovement(double revolutions, Direction direction) {
-        movements.add(new Movements(revolutionsToDistance(revolutions), direction));
+    public void addMovement(double revolutions, boolean objectIsInRange, Direction direction) {
+        movements.add(new Movement(revolutionsToDistance(revolutions), objectIsInRange, direction));
     }
 
     private int currentX, currentY;
 
-    public Mapper() {
+    public MapGenerator() {
         this.currentX = 250;  // Start in the center of the panel
         this.currentY = 250;
         main(new String[] {});
     }
 
-    public Mapper(ArrayList<Movements> movements) {
+    public MapGenerator(ArrayList<Movement> movements) {
         this.movements = movements;
         this.currentX = 250;  // Start in the center of the panel
         this.currentY = 250;
@@ -41,12 +40,12 @@ public class Mapper extends JPanel{
         g.fillOval(currentX - 5, currentY - 5, 10, 10); // Drawing the origin (starting point)
 
         // Process each record and draw the corresponding movement
-        for (Movements record : movements) {
-            moveAndDraw(g, (int) record.getDistance(), record.getDirection());
+        for (Movement record : movements) {
+            moveAndDraw(g, (int) record.getDistance(), record.getDirection(), record.objectInRange());
         }
     }
 
-    private void moveAndDraw(Graphics g, int distance, Direction direction) {
+    private void moveAndDraw(Graphics g, int distance, Direction direction, boolean draw) {
         int previousX = currentX;
         int previousY = currentY;
 
@@ -67,21 +66,23 @@ public class Mapper extends JPanel{
         }
 
         // Draw the movement as a line
-        g.drawLine(previousX, previousY, currentX, currentY);
+        if(draw) g.drawLine(previousX, previousY, currentX, currentY);
     }
 
     public static void main(String[] args) {
         // Create some sample records
-        ArrayList<Movements> records = new ArrayList<>();
-        records.add(new Movements(100, Direction.NORTH));
-        records.add(new Movements(50, Direction.EAST));
-        records.add(new Movements(150, Direction.SOUTH));
-        records.add(new Movements(75, Direction.WEST));
+        ArrayList<Movement> records = new ArrayList<>();
+        records.add(new Movement(100, true, Direction.NORTH));
+        records.add(new Movement(10, false, Direction.NORTH));
+        records.add(new Movement(10, true, Direction.NORTH));
+        records.add(new Movement(50, true, Direction.EAST));
+        records.add(new Movement(150, false, Direction.SOUTH));
+        records.add(new Movement(75, true, Direction.WEST));
 
 
         // Set up the JFrame to display the map
         JFrame frame = new JFrame("Visual Map");
-        Mapper mapPanel = new Mapper(records);
+        MapGenerator mapPanel = new MapGenerator(records);
         frame.add(mapPanel);
         frame.setSize(500, 500);  // Set window size
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
