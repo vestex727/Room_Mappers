@@ -10,8 +10,11 @@ import java.nio.ByteOrder;
 import java.util.ArrayList;
 
 public class Gravemind {
-    double revolutions = 0;
     private ArrayList<Movement> movements = new ArrayList<>();
+    private static int keyIsHeldCounter = 0;
+    private static int keyHeld;
+    private static Direction direction = Direction.NORTH;
+
 
     // Serial port object for communication
     private static SerialPort comPort;
@@ -135,6 +138,7 @@ public class Gravemind {
             }
 
             public void keyReleased(KeyEvent e) {
+                keyHeld = -1;
                 int command = keyToCommand(e.getKeyCode());
                 if (command == currentCommand) {
                     currentCommand = Commands.CMD_STOP.ordinal();
@@ -155,13 +159,29 @@ public class Gravemind {
      */
     private static int keyToCommand(int keyCode) {
         if(keyCode == KeyEvent.VK_ESCAPE) {System.exit(99);}
-        return switch (keyCode) {
-            case KeyEvent.VK_UP, KeyEvent.VK_W -> Commands.CMD_FORWARD.ordinal();
-            case KeyEvent.VK_DOWN, KeyEvent.VK_S -> Commands.CMD_BACKWARD.ordinal();
-            case KeyEvent.VK_LEFT, KeyEvent.VK_A -> Commands.CMD_RIGHT.ordinal();  // Swapped intentionally
-            case KeyEvent.VK_RIGHT, KeyEvent.VK_D -> Commands.CMD_LEFT.ordinal();  // Swapped intentionally
-            default -> -1; // Invalid key
+
+        if(keyCode == keyHeld) keyIsHeldCounter++;
+        else keyIsHeldCounter=0;
+
+        keyHeld = keyCode;
+        System.out.println(direction.name());
+
+        switch (keyCode) {
+            case KeyEvent.VK_UP, KeyEvent.VK_W:
+                return Commands.CMD_FORWARD.ordinal();
+            case KeyEvent.VK_DOWN, KeyEvent.VK_S:
+                return Commands.CMD_BACKWARD.ordinal();
+            case KeyEvent.VK_LEFT, KeyEvent.VK_A:
+                if(keyIsHeldCounter == 20) direction = moveLeft(direction);
+                return Commands.CMD_RIGHT.ordinal();  // Swapped intentionally
+            case KeyEvent.VK_RIGHT, KeyEvent.VK_D:
+                if(keyIsHeldCounter == 20) direction = moveRight(direction);
+                return Commands.CMD_LEFT.ordinal();  // Swapped intentionally
+            default:
+                keyHeld = -1; // Invalid key
+
         };
+        return -1;
     }
 
     /**
@@ -190,10 +210,22 @@ public class Gravemind {
         }
     }
 
+    static Direction moveLeft(Direction direction) {
+        if (direction == Direction.NORTH) return Direction.WEST;
+        else if(direction == Direction.EAST) return Direction.NORTH;
+        else if(direction == Direction.SOUTH) return Direction.EAST;
+        return Direction.SOUTH;
+    }
 
+    static Direction moveRight(Direction direction) {
+        if (direction == Direction.NORTH) return Direction.EAST;
+        else if(direction == Direction.EAST) return Direction.SOUTH;
+        else if(direction == Direction.SOUTH) return Direction.WEST;
+        return Direction.NORTH;
+    }
 
     public static void main(String[] args) {
-        setupSerial("COM4", 115200); // Initialize serial communication
+        setupSerial("COM3", 115200); // Initialize serial communication
         SwingUtilities.invokeLater(Gravemind::createAndShowGUI); // Start GUI on event-dispatch thread
     }
 }
