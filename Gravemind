@@ -10,10 +10,11 @@ import java.nio.ByteOrder;
 import java.util.ArrayList;
 
 public class Gravemind {
-    private ArrayList<Movement> movements = new ArrayList<>();
+    private static ArrayList<Movement> movements = new ArrayList<>();
     private static int keyIsHeldCounter = 0;
     private static int keyHeld;
     private static Direction direction = Direction.NORTH;
+    private static boolean SensorIsOn = false;
 
 
     // Serial port object for communication
@@ -65,8 +66,9 @@ public class Gravemind {
                         int ticksLeft = bb.getInt();  // Encoder ticks for left motor
                         int ticksRight = bb.getInt(); // Encoder ticks for right motor
 
+                        movements.add(new Movement(ticksLeft/100, SensorIsOn, direction));
                         // Print values to console
-                        System.out.printf("Received -> Input: %d | Left: %d | Right: %d%n", input, ticksLeft, ticksRight);
+                        System.out.printf("Received -> Direction: %s | mm: %d | sense: %d%n", direction.name(), ticksLeft, ticksRight);
                     }
                 }
             } catch (IOException e) {
@@ -104,6 +106,17 @@ public class Gravemind {
             buttonPanel.add(button);
         }
 
+        JButton button = new JButton("Make Map");
+        button.setFocusable(false);
+
+        // Send command when pressed, stop when released
+        button.addMouseListener(new MouseAdapter() {
+            public void mousePressed(MouseEvent e) {
+                showMap();
+            }
+        });
+        buttonPanel.add(button);
+
         // Input field for sending custom integer commands
         JPanel inputPanel = new JPanel(new BorderLayout(5, 5));
         inputField = new JTextField();
@@ -139,6 +152,9 @@ public class Gravemind {
 
             public void keyReleased(KeyEvent e) {
                 keyHeld = -1;
+
+                simulateSensor(e);
+
                 int command = keyToCommand(e.getKeyCode());
                 if (command == currentCommand) {
                     currentCommand = Commands.CMD_STOP.ordinal();
@@ -164,9 +180,12 @@ public class Gravemind {
         else keyIsHeldCounter=0;
 
         keyHeld = keyCode;
-        System.out.println(direction.name());
+        //System.out.println(direction.name());
 
         switch (keyCode) {
+            case KeyEvent.VK_ENTER:
+                showMap();
+                break;
             case KeyEvent.VK_UP, KeyEvent.VK_W:
                 return Commands.CMD_FORWARD.ordinal();
             case KeyEvent.VK_DOWN, KeyEvent.VK_S:
@@ -224,8 +243,25 @@ public class Gravemind {
         return Direction.NORTH;
     }
 
+    static void showMap(){
+        System.out.println(movements);
+        JFrame frame = new JFrame("Visual Map");
+        MapGenerator map = new MapGenerator(movements);
+        frame.add(map);
+        frame.setSize(10000, 10000);  // Set window size
+        frame.setVisible(true);
+    }
+
+    static void simulateSensor(KeyEvent e){
+        if(e.getKeyCode() == KeyEvent.VK_C) {
+            SensorIsOn = !SensorIsOn;
+            System.out.println(SensorIsOn);
+        }
+        if(e.getKeyCode() == KeyEvent.VK_M) showMap();
+    }
+
     public static void main(String[] args) {
-        setupSerial("COM3", 115200); // Initialize serial communication
+        setupSerial("COM4", 115200); // Initialize serial communication
         SwingUtilities.invokeLater(Gravemind::createAndShowGUI); // Start GUI on event-dispatch thread
     }
 }
