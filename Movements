@@ -1,4 +1,0 @@
-public record Movements(double distance, Direction direction) {
-    public double getDistance() {return distance;}
-    public Direction getDirection() {return direction;}
-}
