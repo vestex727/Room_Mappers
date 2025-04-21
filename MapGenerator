@@ -23,8 +23,8 @@ public class MapGenerator extends JPanel{
 
     public MapGenerator(ArrayList<Movement> movements) {
         this.movements = movements;
-        this.currentX = 250;  // Start in the center of the panel
-        this.currentY = 250;
+        this.currentX = 500;  // Start in the center of the panel
+        this.currentY = 500;
     }
 
     @Override
@@ -74,6 +74,7 @@ public class MapGenerator extends JPanel{
         ArrayList<Movement> records = new ArrayList<>();
         records.add(new Movement(100, true, Direction.NORTH));
         records.add(new Movement(10, false, Direction.NORTH));
+        records.add(new Movement(10, true, Direction.NORTH));
         records.add(new Movement(10, true, Direction.NORTH));
         records.add(new Movement(50, true, Direction.EAST));
         records.add(new Movement(150, false, Direction.SOUTH));
