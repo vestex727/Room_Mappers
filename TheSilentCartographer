@@ -1,21 +1,28 @@
 #include <MeOrion.h>
-#include <math.h> 
+#include <math.h>
 
-MeDCMotor motorLeft(M1); 
+#include <Wire.h>
+#include "Adafruit_VL53L0X.h"
+
+Adafruit_VL53L0X lox = Adafruit_VL53L0X();
+
+MeDCMotor motorLeft(M1);
 MeDCMotor motorRight(M2);
 
-const int baseSpeed = 200; // <-- Adjust later?
-
 // Encoder pins
-const int ENCODER_LEFT_A = 8;
-const int ENCODER_LEFT_B = 2; // INT0
-const int ENCODER_RIGHT_A = 9;
-const int ENCODER_RIGHT_B = 3; // INT1
+const int ENCODER_RIGHT_A = 8;
+const int ENCODER_RIGHT_B = 2;  // INT0
+const int ENCODER_LEFT_A = 9;
+const int ENCODER_LEFT_B = 3;  // INT1
+
 const int FULL_ROTATION = 552;
 
+
+int32_t targetEncoderLeft = 0;
+int32_t targetEncoderRight = 0;
 // Encoder counters
-volatile long encoderTicksLeft = 0;
-volatile long encoderTicksRight = 0;
+volatile int32_t encoderTicksLeft = 0;
+volatile int32_t encoderTicksRight = 0;
 
 // Movement state flags
 bool isMovingForward = false;
@@ -23,28 +30,6 @@ bool isMovingBackward = false;
 bool isTurningLeft = false;
 bool isTurningRight = false;
 
-/**
- * One rotation of the wheel is 506 ticks
- */
-void setup() {
-  Serial.begin(115200);
-  while (!Serial);
-
-  pinMode(ENCODER_LEFT_A, INPUT_PULLUP);
-  pinMode(ENCODER_LEFT_B, INPUT_PULLUP);
-  pinMode(ENCODER_RIGHT_A, INPUT_PULLUP);
-  pinMode(ENCODER_RIGHT_B, INPUT_PULLUP);
-
-  attachInterrupt(digitalPinToInterrupt(ENCODER_LEFT_B), handleLeftEncoder, CHANGE);
-  attachInterrupt(digitalPinToInterrupt(ENCODER_RIGHT_B), handleRightEncoder, CHANGE);
-
-  Serial.println("Setup Complete.");
-}
-
-void resetEncoders() {
-  encoderTicksLeft = 0;
-  encoderTicksRight = 0;
-}
 
 /**
 * This method is called when there is a change in encoder ticks on the left motor.
@@ -66,137 +51,92 @@ void handleRightEncoder() {
   encoderTicksRight += (a == b) ? -1 : 1;
 }
 
-/**
-* Stop motors.
-*/
-void stopMotors() {
-  motorLeft.stop();
-  motorRight.stop();
-}
+void setup() {
+  Serial.begin(115200);
 
+  pinMode(ENCODER_LEFT_A, INPUT_PULLUP);
+  pinMode(ENCODER_LEFT_B, INPUT_PULLUP);
+  pinMode(ENCODER_RIGHT_A, INPUT_PULLUP);
+  pinMode(ENCODER_RIGHT_B, INPUT_PULLUP);
 
-void driveForwardContinuous(){
-  driveForward();
-}
+  attachInterrupt(digitalPinToInterrupt(ENCODER_LEFT_B), handleLeftEncoder, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(ENCODER_RIGHT_B), handleRightEncoder, CHANGE);
 
-void driveForward(){
-  resetEncoders();
-  int leftStartingValue = encoderTicksLeft;
-  int rightStartingValue = encoderTicksRight;
-  while((encoderTicksLeft - leftStartingValue) < 1 && (encoderTicksRight - rightStartingValue) < 1){
-    if((encoderTicksLeft - leftStartingValue) < 1){
-      motorLeft.run(baseSpeed);
-    }
-
-    if((encoderTicksRight - rightStartingValue) < 1){
-      motorRight.run(-baseSpeed);
-    }
+  Wire.begin();
+   if (!lox.begin()) {
+    Serial.println(F("Failed to boot VL53L0X"));
+    while(1);
   }
+  lox.startRangeContinuous();
 
-  long response[3] = { millis(), encoderTicksLeft, encoderTicksRight };
-  Serial.write(0xAA);
-  Serial.write((uint8_t*)response, sizeof(response));
-
-  resetEncoders();
 }
 
-/**
-* Drive forward when holding up arrow on Java Swing GUI.
-*
-void driveForwardContinuous() {
-  int maxSpeed = baseSpeed; // Only drive as fast as the base speed. Potentially adjust this.
-  int minSpeed = 60;
-  float kP = 7.5; // Proportional coefficent
-  int rightMotorBoost = 0;//10; // <-- Potentially adjust this value
-
-  int error = encoderTicksLeft - encoderTicksRight;
-  int correction = (int)(kP * error);
-  //correction = constrain(correction, -20, 20);
-
-  int speedLeft = constrain(maxSpeed + correction, minSpeed, maxSpeed);
-  int speedRight = constrain(maxSpeed - correction + rightMotorBoost, minSpeed, maxSpeed);
-
-  // Send current encoder values to java controller every 100 milliseconds
-  int input = millis();
-  if ((input % 100) == 0) {
-    long response[3] = { input, encoderTicksLeft, encoderTicksRight };
-    Serial.write(0xAA);
-    Serial.write((uint8_t*)response, sizeof(response));
-  }
-
-  motorLeft.run(speedLeft);
-  motorRight.run(-speedRight);
-}*/
-
-/**
-* Must limit encoder reference to values only aqquired when reversing.
-*/
-void driveBackwardContinuous() {
-  int maxSpeed = baseSpeed;
-  int minSpeed = 60;
-  float kP = 7.5; // 
-
-  int error = encoderTicksRight - encoderTicksLeft;
-  int correction = (int)(kP * error);
-  correction = constrain(correction, -20, 20); // Correction within -20 and 20
-
-  // Constrain corrected speeds within min speed and max speed
-  int speedLeft = constrain(maxSpeed + correction, minSpeed, maxSpeed);
-  int speedRight = constrain(maxSpeed - correction, minSpeed, maxSpeed);
-  
-  // Apply corrected speeds
-  motorLeft.run(-speedLeft);
-  motorRight.run(speedRight);
-}
-
-void turnLeftContinuous() {
-  motorLeft.run(-baseSpeed);
-  motorRight.run(-baseSpeed);
-}
-
-/**
-* Turns the robot right as long as the right arrow key is pressed.
-*/
-void turnRightContinuous() {
-  motorLeft.run(baseSpeed);
-  motorRight.run(baseSpeed);
+void resetEncoders() {
+  encoderTicksLeft = 0;
+  encoderTicksRight = 0;
 }
 
 void loop() {
-
-  // Must be connected to Bluetooth via the Java program.
   if (Serial.available()) {
+    // char buff[256];
+    // int read = Serial.readBytes(buff, sizeof(buff));
+    // Serial.write(buff, read);
 
-    // Java controller sends byte telling robot how to move. See switch statement. 
-    int input = Serial.read(); 
-
-    // Reset all movement flags; temp fix. 
-    isMovingForward = false;
-    isMovingBackward = false;
-    isTurningLeft = false;
-    isTurningRight = false;
+    int32_t input = Serial.read() - 'a';
 
     switch (input) {
-      case 1: isMovingForward = true; break;
-      case 2: isMovingBackward = true; break;
-      case 3: isTurningLeft = true; break;
-      case 4: isTurningRight = true; break;
-      case 0: stopMotors(); break;
+      case 0:
+        targetEncoderLeft = encoderTicksLeft;
+        targetEncoderRight = encoderTicksRight;
+        break;
+      case 1:
+        targetEncoderLeft += 500;
+        targetEncoderRight += 500;
+        break;
+      case 2:
+        targetEncoderLeft -= 500;
+        targetEncoderRight -= 500;
+        break;
+      case 3:
+        targetEncoderLeft += 500;
+        targetEncoderRight -= 500;
+        break;
+      case 4:
+        targetEncoderLeft -= 500;
+        targetEncoderRight += 500;
+        break;
     }
 
-    long response[3] = { input, encoderTicksLeft, encoderTicksRight };
-    Serial.write(0xAA); // Byte indicating beginning of message sequence.
-    Serial.write((uint8_t*)response, sizeof(response));
+    // int32_t response[3] = { input, encoderTicksLeft, encoderTicksRight };
+    // Serial.write(0xAA); // Byte indicating beginning of message sequence.
+    // Serial.write((uint8_t*)response, sizeof(response));
   }
 
-  // Apply movement based on active flag.
-  if (isMovingForward) {
-    driveForwardContinuous();
-  } else if (isMovingBackward) {
-    driveBackwardContinuous();
-  } else if (isTurningLeft) {
-    turnLeftContinuous();
-  } else if (isTurningRight) {
-    turnRightContinuous();
+  // Serial.print(distanceSensor.distanceCm());
+   if (lox.isRangeComplete()) {
+    Serial.print("Distance in mm: ");
+    Serial.print(lox.readRange());
+    Serial.println();
   }
+  // Serial.print(" ");
+  // Serial.print(encoderTicksLeft);
+  // Serial.print(" ");
+  // Serial.print(targetEncoderLeft);
+  // Serial.print(" ");
+  // Serial.print(encoderTicksRight);
+  // Serial.print(" ");
+  // Serial.print(targetEncoderRight);
+
+  int32_t errorLeft = (targetEncoderLeft - encoderTicksLeft) * 10;
+  int32_t errorRight = (targetEncoderRight - encoderTicksRight) * 10;
+
+  // Serial.print("[");
+  // Serial.print(errorLeft);
+  // Serial.print(" ");
+  // Serial.print(errorRight);
+  // Serial.print("]");
+
+
+  motorLeft.run(constrain(errorLeft, -255, 255));
+  motorRight.run(constrain(-errorRight, -255, 255));
 }
