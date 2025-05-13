@@ -82,7 +82,7 @@ void loop() {
     // int read = Serial.readBytes(buff, sizeof(buff));
     // Serial.write(buff, read);
 
-    int32_t input = Serial.read() - 'a';
+    int32_t input = Serial.read();
 
     switch (input) {
       case 0:
@@ -114,9 +114,8 @@ void loop() {
 
   // Serial.print(distanceSensor.distanceCm());
    if (lox.isRangeComplete()) {
-    Serial.print("Distance in mm: ");
-    Serial.print(lox.readRange());
-    Serial.println();
+      Serial.write(0xBB);
+      Serial.write(lox.readRange()<500);
   }
   // Serial.print(" ");
   // Serial.print(encoderTicksLeft);
