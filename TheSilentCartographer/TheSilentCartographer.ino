@@ -15,14 +15,20 @@ const int ENCODER_RIGHT_B = 2;  // INT0
 const int ENCODER_LEFT_A = 9;
 const int ENCODER_LEFT_B = 3;  // INT1
 
-const int FULL_ROTATION = 552;
-
 
 int32_t targetEncoderLeft = 0;
 int32_t targetEncoderRight = 0;
 // Encoder counters
 volatile int32_t encoderTicksLeft = 0;
 volatile int32_t encoderTicksRight = 0;
+
+
+int32_t encoderTicksLeftPrev = 0;
+int32_t encoderTicksRightPrev = 0;
+
+float xPos = 0.0;
+float yPos = 0.0;
+float angle = 0.0;
 
 // Movement state flags
 bool isMovingForward = false;
@@ -76,6 +82,43 @@ void resetEncoders() {
   encoderTicksRight = 0;
 }
 
+#define WHEEL_CIRCUM ((float)(PI*7.0f))
+#define WHEEL_DISTANCE (14.0f)
+
+void odom(){
+
+  float ldiff = (encoderTicksLeft-encoderTicksLeftPrev)*WHEEL_CIRCUM/506.0f;
+  float rdiff = (encoderTicksRight-encoderTicksRightPrev)*WHEEL_CIRCUM/506.0f;
+  encoderTicksLeftPrev = encoderTicksLeft;
+  encoderTicksRightPrev = encoderTicksRight;
+
+  float disp = (ldiff + rdiff)/2.0f;
+  angle += (ldiff - rdiff)/WHEEL_DISTANCE;
+
+  xPos += (float)cos(angle)*disp;
+  yPos += (float)sin(angle)*disp;
+
+  Serial.write(0xBB);
+  float response[3] = { xPos, yPos, angle };
+  Serial.write((uint8_t*)response, sizeof(response));
+  // Serial.print("l: ");
+  // Serial.print(encoderTicksLeft);
+  // Serial.print(" pl: ");
+  // Serial.print(encoderTicksLeftPrev);
+  // Serial.print(" r: ");
+  // Serial.print(encoderTicksRight);
+  // Serial.print(" pr: ");
+  // Serial.print(encoderTicksRightPrev);
+  
+  // Serial.print(" x: ");
+  // Serial.print(xPos);
+  // Serial.print(" y: ");
+  // Serial.print(yPos);
+  // Serial.print(" angle: ");
+  // Serial.print(angle);
+  // Serial.write(0);
+}
+
 void loop() {
   if (Serial.available()) {
     // char buff[256];
@@ -107,14 +150,14 @@ void loop() {
         break;
     }
 
-    // int32_t response[3] = { input, encoderTicksLeft, encoderTicksRight };
-    // Serial.write(0xAA); // Byte indicating beginning of message sequence.
-    // Serial.write((uint8_t*)response, sizeof(response));
+    Serial.write(0xAA);
+    Serial.write(input); 
   }
 
-  // Serial.print(distanceSensor.distanceCm());
+  odom();
+
    if (lox.isRangeComplete()) {
-      Serial.write(0xBB);
+      Serial.write(0xCC);
       Serial.write(lox.readRange()<500);
   }
   // Serial.print(" ");

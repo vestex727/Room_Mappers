@@ -1,23 +1,16 @@
 import com.fazecast.jSerialComm.SerialPort;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 public class Robot implements AutoCloseable{
     private final SerialPort port;
-    private final InputStream in;
-    private final OutputStream out;
 
     public Robot(String port, int baud){
         this.port = SerialPort.getCommPort(port);
         this.port.setBaudRate(baud);
-        this.port.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING, 0, 0);
-
-        this.in = this.port.getInputStream();
-        this.out = this.port.getOutputStream();
+        this.port.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING | SerialPort.TIMEOUT_WRITE_BLOCKING, 0, 0);
 
         if (!this.port.openPort()) {
             throw new RuntimeException("Failed to open port");
@@ -27,44 +20,53 @@ public class Robot implements AutoCloseable{
     }
 
     public synchronized void send(Command command) {
-        try{
-            out.write(command.ordinal());
-            out.flush();
-        }catch (IOException e){
-            e.printStackTrace();
-        }
+        port.writeBytes(new byte[]{(byte) command.ordinal()}, 1);
+        port.flushIOBuffers();
     }
 
     public synchronized void sendRaw(int customCommand) {
-        try{
-            out.write(customCommand);
-            out.flush();
-        }catch (IOException e){
-            e.printStackTrace();
-        }
+        port.writeBytes(new byte[]{(byte) customCommand}, 1);
+        port.flushIOBuffers();
+    }
+
+    private int readByte(){
+        var b = new byte[1];
+        var read = port.readBytes(b, 1);
+        if(read == -1)return -1;
+        return ((int)b[0])&0xFF;
+    }
+
+    private byte[] readBytes(int number){
+        var b = new byte[number];
+        var read = port.readBytes(b, 1);
+        if(read == -1)return null;
+        return b;
     }
 
     private void readLoop(){
-        byte[] buffer = new byte[256];
         while (true) {
             try {
-                int type = in.read();
+                var type = readByte();
                 switch (type){
                     case 0xAA -> { // response to command
-                        int result = in.readNBytes(buffer, 0, 12);
-                        if(result!=12)throw new RuntimeException("Couldn't read all bytes");
-                        ByteBuffer bb = ByteBuffer.wrap(buffer).order(ByteOrder.LITTLE_ENDIAN);
-                        int input = bb.getInt();
-                        int ticksLeft = bb.getInt();
-                        int ticksRight = bb.getInt();
-                        System.out.printf("Received -> Input: %d | mm: %d | sense: %d%n", input, ticksLeft, ticksRight);
+                        int command = readByte();
+                        System.out.printf("Received -> Command %d\n", command);
                     }
-                    case 0xBB -> { // distance sensor
-                        int result = in.readNBytes(buffer, 0, 1);
-                        if(result!=1)throw new RuntimeException("Couldn't read all bytes");
-                        ByteBuffer bb = ByteBuffer.wrap(buffer).order(ByteOrder.LITTLE_ENDIAN);
-                        var near = bb.get()!=0;
+                    case 0xBB -> { // movement data
+                        ByteBuffer bb = ByteBuffer.wrap(readBytes(12)).order(ByteOrder.LITTLE_ENDIAN);
+                        var x = bb.getFloat();
+                        var y = bb.getFloat();
+                        var angle = bb.getFloat();
+                        System.out.printf("Received -> [x: %f, y: %f, angle: %f]\n", x, y, angle);
+                    }
+                    case 0xCC -> { // distance sensor
+                        var near = readByte()!=0;
                         System.out.println("Received -> Near: " + near);
+                    }
+                    case 0 -> {}
+                    case -1 -> { // end of stream
+                        System.out.println("End of stream");
+//                        return;
                     }
                     default -> System.out.println("Invalid receiving command type: " + type);
                 }
@@ -76,12 +78,6 @@ public class Robot implements AutoCloseable{
 
     @Override
     public void close() {
-        try{
-            if(in!=null)in.close();
-        }catch (IOException ignore){}
-        try{
-            if(out!=null)out.close();
-        }catch (IOException ignore){}
         if(port !=null) port.closePort();
     }
 
