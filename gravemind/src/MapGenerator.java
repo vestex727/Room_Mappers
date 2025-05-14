@@ -42,7 +42,7 @@ public class MapGenerator{
         JFrame frame = new JFrame("Visual Map");
         frame.add(panel);
         frame.setSize(width, height);  // Set window size
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         frame.setVisible(true);
     }
 }
