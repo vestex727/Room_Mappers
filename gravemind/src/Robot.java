@@ -102,7 +102,7 @@ public class Robot implements AutoCloseable{
                         }
                     }
                     case 0xCC -> { // distance sensor
-                        var near = (float)ByteBuffer.wrap(readBytes(2)).order(ByteOrder.LITTLE_ENDIAN).getShort();
+                        var near = ByteBuffer.wrap(readBytes(2)).order(ByteOrder.LITTLE_ENDIAN).getShort()/10.0f;
                         synchronized (distanceListeners){
                             for(var listener : distanceListeners) listener.handle(near);
                         }
