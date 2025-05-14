@@ -32,7 +32,7 @@ public class MapGenerator{
                 float cx = 0;
                 float cy = 0;
                 for (var pos : positions) {
-                    g.drawLine((int) cx, (int) cy, (int) pos.x(), (int) pos.y());
+                    if(pos.angle() == 1) g.drawLine((int) cx, (int) cy, (int) pos.x(), (int) pos.y());
                     cx = pos.x();
                     cy = pos.y();
                 }
@@ -49,10 +49,12 @@ public class MapGenerator{
 
     public static void main(String ... args){
         var gen = new MapGenerator();
-        gen.addPosition(new Position(0,0,0));
+        gen.addPosition(new Position(0,0,1));
         gen.addPosition(new Position(0,50,0));
         gen.addPosition(new Position(50,100,0));
-        gen.addPosition(new Position(100,75,0));
+        gen.addPosition(new Position(100,75,1));
+        gen.addPosition(new Position(75,10000,0));
+        gen.addPosition(new Position(101,75,1));
         gen.show();
     }
 }
