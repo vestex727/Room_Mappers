@@ -1,5 +1,9 @@
 #include <MeOrion.h>
 #include <math.h>
+#include <SoftwareSerial.h>
+
+
+MeBluetooth bluetooth(PORT_5);
 
 #include <Wire.h>
 #include "Adafruit_VL53L0X.h"
@@ -61,6 +65,7 @@ void handleRightEncoder() {
 
 void setup() {
   Serial.begin(115200);
+  bluetooth.begin(115200);
 
   pinMode(ENCODER_LEFT_A, INPUT_PULLUP);
   pinMode(ENCODER_LEFT_B, INPUT_PULLUP);
@@ -103,10 +108,11 @@ void odom(){
 
   xPos += (float)cos(angle)*disp;
   yPos += (float)sin(angle)*disp;
+  
   float sensor = (sensorIsOn ? 1 : 0);
-  Serial.write(0xBB);
-  float response[3] = { xPos, yPos,  sensor};
-  Serial.write((uint8_t*)response, sizeof(response));
+  bluetooth.write(0xBB);
+  float response[3] = { xPos, yPos, angle };
+  bluetooth.write((uint8_t*)response, sizeof(response));
 
   // Serial.write(0xDD);
   // Serial.print("ld: ");
@@ -137,12 +143,12 @@ void odom(){
 }
 
 void loop() {
-  if (Serial.available()) {
+  if (bluetooth.available()) {
     // char buff[256];
     // int read = Serial.readBytes(buff, sizeof(buff));
     // Serial.write(buff, read);
 
-    int32_t input = Serial.read();
+    int32_t input = bluetooth.read();
 
     switch (input) {
       case 0:
@@ -167,17 +173,15 @@ void loop() {
         break;
     }
 
-    Serial.write(0xAA);
-    Serial.write(input); 
+    bluetooth.write(0xAA);
+    bluetooth.write(input); 
   }
 
   odom();
 
    if (lox.isRangeComplete()) {
-      //Serial.write(0xCC);
-      //Serial.write(lox.readRange()<500);
-      sensorIsOn = (lox.readRange()<500);
-
+      // bluetooth.write(0xCC);
+      // bluetooth.write(lox.readRange()<500);
   }
   // Serial.print(" ");
   // Serial.print(encoderTicksLeft);

@@ -76,15 +76,6 @@ public class Robot implements AutoCloseable{
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-//        try {
-//            return port.getInputStreamWithSuppressedTimeoutExceptions().read();
-//        } catch (IOException e) {
-//            throw new RuntimeException(e);
-//        }
-//        var b = new byte[1];
-//        var read = port.readBytes(b, 1);
-//        if(read == -1)return -1;
-//        return ((int)b[0])&0xFF;
     }
 
     private byte[] readBytes(int number){
@@ -94,11 +85,6 @@ public class Robot implements AutoCloseable{
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-//        var b = new byte[number];
-//        var read = port.readBytes(b, number);
-//        if(read == -1)return null;
-//        if(read != number)throw new RuntimeException("Wrong number of bytes read");
-//        return b;
     }
 
     private void readLoop(){
