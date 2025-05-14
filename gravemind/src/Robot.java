@@ -1,5 +1,8 @@
 import com.fazecast.jSerialComm.SerialPort;
+import com.fazecast.jSerialComm.SerialPortDataListener;
+import com.fazecast.jSerialComm.SerialPortEvent;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
@@ -24,8 +27,9 @@ public class Robot implements AutoCloseable{
 
     public Robot(String port, int baud){
         this.port = SerialPort.getCommPort(port);
-        this.port.setBaudRate(baud);
-        this.port.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING | SerialPort.TIMEOUT_WRITE_BLOCKING, 0, 0);
+        this.port.setComPortParameters(baud, 8, 1, 0);
+        this.port.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING | SerialPort.TIMEOUT_WRITE_BLOCKING, 500000, 500000);
+        this.port.getOutputStream();
 
         if (!this.port.openPort()) {
             throw new RuntimeException("Failed to open port");
@@ -63,18 +67,30 @@ public class Robot implements AutoCloseable{
     }
 
     private int readByte(){
-        var b = new byte[1];
-        var read = port.readBytes(b, 1);
-        if(read == -1)return -1;
-        return ((int)b[0])&0xFF;
+
+        try {
+            return port.getInputStreamWithSuppressedTimeoutExceptions().read();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+//        var b = new byte[1];
+//        var read = port.readBytes(b, 1);
+//        if(read == -1)return -1;
+//        return ((int)b[0])&0xFF;
     }
 
     private byte[] readBytes(int number){
-        var b = new byte[number];
-        var read = port.readBytes(b, number);
-        if(read == -1)return null;
-        if(read != number)throw new RuntimeException("Wrong number of bytes read");
-        return b;
+
+        try {
+            return port.getInputStreamWithSuppressedTimeoutExceptions().readNBytes(number);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+//        var b = new byte[number];
+//        var read = port.readBytes(b, number);
+//        if(read == -1)return null;
+//        if(read != number)throw new RuntimeException("Wrong number of bytes read");
+//        return b;
     }
 
     private void readLoop(){
@@ -104,7 +120,7 @@ public class Robot implements AutoCloseable{
                     case 0xDD -> { //debug
                         while(true){
                             var in = readByte();
-                            if(in==-1||in==0)break;
+                            if(in==0)break;
                             System.err.print((char)in);
                         }
                     }
