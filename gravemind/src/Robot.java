@@ -3,6 +3,7 @@ import com.fazecast.jSerialComm.SerialPortDataListener;
 import com.fazecast.jSerialComm.SerialPortEvent;
 
 import java.io.IOException;
+import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
@@ -29,7 +30,7 @@ public class Robot implements AutoCloseable{
         this.port = SerialPort.getCommPort(port);
         this.port.setComPortParameters(baud, 8, 1, 0);
         this.port.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING | SerialPort.TIMEOUT_WRITE_BLOCKING, 500000, 500000);
-        this.port.getOutputStream();
+
 
         if (!this.port.openPort()) {
             throw new RuntimeException("Failed to open port");
@@ -57,22 +58,29 @@ public class Robot implements AutoCloseable{
     }
 
     public synchronized void send(Command command) {
-        port.writeBytes(new byte[]{(byte) command.ordinal()}, 1);
-        port.flushIOBuffers();
+        sendRaw(command.ordinal());
     }
 
     public synchronized void sendRaw(int customCommand) {
-        port.writeBytes(new byte[]{(byte) customCommand}, 1);
-        port.flushIOBuffers();
+        try {
+            port.getOutputStream().write(customCommand);
+            port.getOutputStream().flush();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        };
     }
 
     private int readByte(){
-
         try {
             return port.getInputStreamWithSuppressedTimeoutExceptions().read();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+//        try {
+//            return port.getInputStreamWithSuppressedTimeoutExceptions().read();
+//        } catch (IOException e) {
+//            throw new RuntimeException(e);
+//        }
 //        var b = new byte[1];
 //        var read = port.readBytes(b, 1);
 //        if(read == -1)return -1;
