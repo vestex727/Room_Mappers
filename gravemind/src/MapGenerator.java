@@ -3,89 +3,45 @@ import javax.swing.*;
 import java.awt.*;
 
 
-public class MapGenerator extends JPanel{
-    double currentDistance;
-    ArrayList<Movement> movements;
+public class MapGenerator{
+    private ArrayList<Position> positions = new ArrayList<>();
 
-    private double revolutionsToDistance(double revolutions) {return currentDistance = 7 * Math.PI * revolutions;}
-
-    public void addMovement(double revolutions, boolean objectIsInRange, Direction direction) {
-        movements.add(new Movement(revolutionsToDistance(revolutions), objectIsInRange, direction));
+    public void addPosition(Position position) {
+        positions.add(position);
     }
 
-    private int currentX, currentY;
+    public void show(){
+        final int width = 500;
+        final int height = 500;
+        var panel = new JPanel(){
 
-    public MapGenerator() {
-        this.currentX = 250;  // Start in the center of the panel
-        this.currentY = 250;
-        main(new String[] {});
-    }
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
 
-    public MapGenerator(ArrayList<Movement> movements) {
-        this.movements = movements;
-        this.currentX = 500;  // Start in the center of the panel
-        this.currentY = 500;
-    }
+                // Set up the graphics (background color and drawing color)
+                g.setColor(Color.BLACK);
+                g.fillRect(0, 0, getWidth(), getHeight());  // Set the background to black
+                g.setColor(Color.WHITE);
+                g.translate(500, 500);
 
-    @Override
-    protected void paintComponent(Graphics g) {
-        super.paintComponent(g);
+                // Draw the origin point
+                g.fillOval(- 5, - 5, 10, 10); // Drawing the origin (starting point)
 
-        // Set up the graphics (background color and drawing color)
-        g.setColor(Color.BLACK);
-        g.fillRect(0, 0, getWidth(), getHeight());  // Set the background to black
-        g.setColor(Color.WHITE);
-
-        // Draw the origin point
-        g.fillOval(currentX - 5, currentY - 5, 10, 10); // Drawing the origin (starting point)
-
-        // Process each record and draw the corresponding movement
-        for (Movement record : movements) {
-            moveAndDraw(g, (int) record.getDistance(), record.getDirection(), record.objectInRange());
-        }
-    }
-
-    private void moveAndDraw(Graphics g, int distance, Direction direction, boolean draw) {
-        int previousX = currentX;
-        int previousY = currentY;
-
-        // Move based on direction
-        switch (direction) {
-            case NORTH:
-                currentY -= distance;
-                break;
-            case SOUTH:
-                currentY += distance;
-                break;
-            case EAST:
-                currentX += distance;
-                break;
-            case WEST:
-                currentX -= distance;
-                break;
-        }
-
-        // Draw the movement as a line
-        if(draw) g.drawLine(previousX, previousY, currentX, currentY);
-    }
-
-    public static void main(String[] args) {
-        // Create some sample records
-        ArrayList<Movement> records = new ArrayList<>();
-        records.add(new Movement(100, true, Direction.NORTH));
-        records.add(new Movement(10, false, Direction.NORTH));
-        records.add(new Movement(10, true, Direction.NORTH));
-        records.add(new Movement(10, true, Direction.NORTH));
-        records.add(new Movement(50, true, Direction.EAST));
-        records.add(new Movement(150, false, Direction.SOUTH));
-        records.add(new Movement(75, true, Direction.WEST));
-
+                float cx = 0;
+                float cy = 0;
+                for (var pos : positions) {
+                    g.drawLine((int) cx, (int) cy, (int) pos.x(), (int) pos.y());
+                    cx = pos.x();
+                    cy = pos.y();
+                }
+            }
+        };
 
         // Set up the JFrame to display the map
         JFrame frame = new JFrame("Visual Map");
-        MapGenerator mapPanel = new MapGenerator(records);
-        frame.add(mapPanel);
-        frame.setSize(500, 500);  // Set window size
+        frame.add(panel);
+        frame.setSize(width, height);  // Set window size
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setVisible(true);
     }

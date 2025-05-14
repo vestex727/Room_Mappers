@@ -4,15 +4,17 @@ import java.awt.event.*;
 import java.util.ArrayList;
 
 public class GravemindControlPanel extends JFrame{
-    private ArrayList<Movement> movements = new ArrayList<>();
+    private ArrayList<Position> movements = new ArrayList<>();
     private boolean SensorIsOn = false;
 
     private Robot robot;
+    private MapGenerator mapGenerator = new MapGenerator();
 
     private JTextField inputField;
 
     public GravemindControlPanel(Robot robot){
         this.robot = robot;
+        robot.addMovementListener(mapGenerator::addPosition);
 
         this.setTitle("Gravemind Control Panel");
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -45,7 +47,7 @@ public class GravemindControlPanel extends JFrame{
         // Send command when pressed, stop when released
         button.addMouseListener(new MouseAdapter() {
             public void mousePressed(MouseEvent e) {
-                showMap();
+                mapGenerator.show();
             }
         });
         buttonPanel.add(button);
@@ -105,7 +107,7 @@ public class GravemindControlPanel extends JFrame{
 
         switch (keyCode) {
             case KeyEvent.VK_ENTER:
-                showMap();
+                mapGenerator.show();
                 break;
             case KeyEvent.VK_UP, KeyEvent.VK_W:
                 return Command.Forward;
@@ -120,21 +122,12 @@ public class GravemindControlPanel extends JFrame{
         return null;
     }
 
-    void showMap(){
-        System.out.println(movements);
-        JFrame frame = new JFrame("Visual Map");
-        MapGenerator map = new MapGenerator(movements);
-        frame.add(map);
-        frame.setSize(720, 480);  // Set window size
-        frame.setVisible(true);
-    }
-
     void simulateSensor(KeyEvent e){
         if(e.getKeyCode() == KeyEvent.VK_C) {
             SensorIsOn = !SensorIsOn;
             System.out.println(SensorIsOn);
         }
-        if(e.getKeyCode() == KeyEvent.VK_M) showMap();
+        if(e.getKeyCode() == KeyEvent.VK_M) mapGenerator.show();
     }
 
     public static void main(String[] args) {

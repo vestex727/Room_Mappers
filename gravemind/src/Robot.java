@@ -1,11 +1,16 @@
 import com.fazecast.jSerialComm.SerialPort;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.ArrayList;
 
 public class Robot implements AutoCloseable{
     private final SerialPort port;
+    private final ArrayList<MovementListener> movementListeners = new ArrayList<>();
+
+    public interface MovementListener{
+        void handle(Position m);
+    }
 
     public Robot(String port, int baud){
         this.port = SerialPort.getCommPort(port);
@@ -17,6 +22,12 @@ public class Robot implements AutoCloseable{
         }
 
         new Thread(this::readLoop).start();
+    }
+
+    public void addMovementListener(MovementListener listener){
+        synchronized (movementListeners){
+            movementListeners.add(listener);
+        }
     }
 
     public synchronized void send(Command command) {
@@ -55,23 +66,31 @@ public class Robot implements AutoCloseable{
                     }
                     case 0xBB -> { // movement data
                         ByteBuffer bb = ByteBuffer.wrap(readBytes(12)).order(ByteOrder.LITTLE_ENDIAN);
-                        var x = bb.getFloat();
-                        var y = bb.getFloat();
-                        var angle = bb.getFloat();
-                        System.out.printf("Received -> [x: %f, y: %f, angle: %f]\n", x, y, angle);
+                        var movement = new Position(bb.getFloat(), bb.getFloat(), bb.getFloat());
+                        synchronized (movementListeners){
+                            for(var listener : movementListeners) listener.handle(movement);
+                        }
                     }
                     case 0xCC -> { // distance sensor
                         var near = readByte()!=0;
                         System.out.println("Received -> Near: " + near);
                     }
+                    case 0xDD -> { //debug
+                        while(true){
+                            var in = readByte();
+                            if(in==-1||in==0)break;
+                            System.err.print((char)in);
+                        }
+                    }
                     case 0 -> {}
                     case -1 -> { // end of stream
+                        Thread.sleep(10);
                         System.out.println("End of stream");
 //                        return;
                     }
                     default -> System.out.println("Invalid receiving command type: " + type);
                 }
-            } catch (IOException e) {
+            } catch (Exception e) {
                 System.err.println("Error reading from serial port: " + e.getMessage());
             }
         }
