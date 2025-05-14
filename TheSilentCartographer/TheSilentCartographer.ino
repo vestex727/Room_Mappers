@@ -114,32 +114,32 @@ void odom(){
   float response[3] = { xPos, yPos, angle };
   bluetooth.write((uint8_t*)response, sizeof(response));
 
-  // Serial.write(0xDD);
-  // Serial.print("ld: ");
-  // Serial.print(ldiff);
-  // Serial.print(" rd: ");
-  // Serial.print(rdiff);
-  // Serial.print(" d: ");
-  // Serial.print(disp);
-  // Serial.print(" ad: ");
-  // Serial.print((ldiff - rdiff)/WHEEL_DISTANCE);
-  // Serial.print(" l: ");
-  // Serial.print(encoderTicksLeft);
-  // Serial.print(" pl: ");
-  // Serial.print(encoderTicksLeftPrev);
-  // Serial.print(" r: ");
-  // Serial.print(encoderTicksRight);
-  // Serial.print(" pr: ");
-  // Serial.print(encoderTicksRightPrev);
-  // Serial.println();
-  // Serial.write(0);
+  // bluetooth.write(0xDD);
+  // bluetooth.print("ld: ");
+  // bluetooth.print(ldiff);
+  // bluetooth.print(" rd: ");
+  // bluetooth.print(rdiff);
+  // bluetooth.print(" d: ");
+  // bluetooth.print(disp);
+  // bluetooth.print(" ad: ");
+  // bluetooth.print((ldiff - rdiff)/WHEEL_DISTANCE);
+  // bluetooth.print(" l: ");
+  // bluetooth.print(encoderTicksLeft);
+  // bluetooth.print(" pl: ");
+  // bluetooth.print(encoderTicksLeftPrev);
+  // bluetooth.print(" r: ");
+  // bluetooth.print(encoderTicksRight);
+  // bluetooth.print(" pr: ");
+  // bluetooth.print(encoderTicksRightPrev);
+  // bluetooth.println();
+  // bluetooth.write(0);
   
-  // Serial.print(" x: ");
-  // Serial.print(xPos);
-  // Serial.print(" y: ");
-  // Serial.print(yPos);
-  // Serial.print(" angle: ");
-  // Serial.print(angle);
+  // bluetooth.print(" x: ");
+  // bluetooth.print(xPos);
+  // bluetooth.print(" y: ");
+  // bluetooth.print(yPos);
+  // bluetooth.print(" angle: ");
+  // bluetooth.print(angle);
 }
 
 void loop() {
