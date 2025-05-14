@@ -23,7 +23,7 @@ public class MapGenerator{
                 g.setColor(Color.BLACK);
                 g.fillRect(0, 0, getWidth(), getHeight());  // Set the background to black
                 g.setColor(Color.WHITE);
-                g.translate(500, 500);
+                g.translate(width/2, height/2);
 
                 // Draw the origin point
                 g.fillOval(- 5, - 5, 10, 10); // Drawing the origin (starting point)
