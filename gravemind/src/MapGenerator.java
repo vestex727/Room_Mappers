@@ -18,7 +18,7 @@ public class MapGenerator{
         this.distance = distance;
     }
 
-    public synchronized void show(){
+    public void show(){
         final int width = 500;
         final int height = 500;
         var panel = new JPanel(){
@@ -30,7 +30,6 @@ public class MapGenerator{
                 // Set up the graphics (background color and drawing color)
                 g.setColor(Color.BLACK);
                 g.fillRect(0, 0, getWidth(), getHeight());  // Set the background to black
-                g.setColor(Color.WHITE);
                 g.translate(width/2, height/2);
                 ((Graphics2D)g).scale(1, -1);
 
@@ -39,13 +38,15 @@ public class MapGenerator{
 
                 float cx = 0;
                 float cy = 0;
-                for (var data : data) {
-                    g.setColor(Color.GREEN);
-                    g.drawLine((int) cx, (int) cy, (int) data.pos().x(), (int) data.pos().y());
-                    g.setColor(Color.YELLOW);
-                    g.drawLine((int) cx, (int) cy, (int) (cx + data.distance*Math.cos(data.pos.angle())), (int) (cy + data.distance*Math.sin(data.pos.angle())));
-                    cx = data.pos().x();
-                    cy = data.pos().y();
+                synchronized (MapGenerator.this){
+                    for (var data : data) {
+                        g.setColor(Color.GREEN);
+                        g.drawLine((int) cx, (int) cy, (int) data.pos().x(), (int) data.pos().y());
+                        g.setColor(Color.YELLOW);
+                        g.drawLine((int) cx, (int) cy, (int) (cx + data.distance*Math.cos(data.pos.angle())), (int) (cy + data.distance*Math.sin(data.pos.angle())));
+                        cx = data.pos().x();
+                        cy = data.pos().y();
+                    }
                 }
             }
         };
@@ -60,7 +61,9 @@ public class MapGenerator{
 
     public static void main(String ... args){
         var gen = new MapGenerator();
+        gen.updateDistance(5);
         gen.addPosition(new Position(0,0,1));
+
         gen.addPosition(new Position(0,50,0));
         gen.addPosition(new Position(50,100,0));
         gen.addPosition(new Position(100,75,1));

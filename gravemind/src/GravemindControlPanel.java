@@ -122,6 +122,6 @@ public class GravemindControlPanel extends JFrame{
     }
 
     public static void main(String[] args) {
-        new GravemindControlPanel(new Robot("COM7", 115200));
+        new GravemindControlPanel(new Robot("COM5", 115200));
     }
 }
