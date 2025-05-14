@@ -37,16 +37,20 @@ public class MapGenerator{
                 // Draw the origin point
                 g.fillOval(- 5, - 5, 10, 10); // Drawing the origin (starting point)
 
-                float cx = 0;
-                float cy = 0;
                 synchronized (MapGenerator.this){
                     for (var data : data) {
                         g.setColor(Color.YELLOW);
-                        g.drawLine((int) cx, (int) cy, (int) (cx + data.distance*Math.cos(data.pos.angle())), (int) (cy + data.distance*Math.sin(data.pos.angle())));
-                        cx = data.pos().x();
-                        cy = data.pos().y();
+                        g.drawLine(
+                                (int) data.pos().x(),
+                                (int) data.pos().y(),
+                                (int) (data.pos().x() + data.distance*Math.cos(data.pos.angle())),
+                                (int) (data.pos().y() + data.distance*Math.sin(data.pos.angle()))
+                        );
                     }
                 }
+                
+                float cx = 0;
+                float cy = 0;
                 ((Graphics2D) g).setStroke(new BasicStroke(2));
                 synchronized (MapGenerator.this){
                     for (var data : data) {
