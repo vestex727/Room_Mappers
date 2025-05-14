@@ -43,8 +43,8 @@ public class MapGenerator{
                         g.drawLine(
                                 (int) data.pos().x(),
                                 (int) data.pos().y(),
-                                (int) (data.pos().x() + data.distance*Math.cos(data.pos.angle() + Math.PI/2)),
-                                (int) (data.pos().y() + data.distance*Math.sin(data.pos.angle() + Math.PI/2))
+                                (int) (data.pos().x() + data.distance*Math.cos(data.pos.angle() - Math.PI/2)),
+                                (int) (data.pos().y() + data.distance*Math.sin(data.pos.angle() - Math.PI/2))
                         );
                     }
                 }
