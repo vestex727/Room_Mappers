@@ -85,6 +85,10 @@ void resetEncoders() {
 #define WHEEL_CIRCUM ((float)(PI*7.0f))
 #define WHEEL_DISTANCE (14.0f)
 
+void debugEncoders(){
+
+}
+
 void odom(){
 
   float ldiff = (encoderTicksLeft-encoderTicksLeftPrev)*WHEEL_CIRCUM/506.0f;
@@ -101,14 +105,26 @@ void odom(){
   Serial.write(0xBB);
   float response[3] = { xPos, yPos, angle };
   Serial.write((uint8_t*)response, sizeof(response));
-  // Serial.print("l: ");
-  // Serial.print(encoderTicksLeft);
-  // Serial.print(" pl: ");
-  // Serial.print(encoderTicksLeftPrev);
-  // Serial.print(" r: ");
-  // Serial.print(encoderTicksRight);
-  // Serial.print(" pr: ");
-  // Serial.print(encoderTicksRightPrev);
+
+  Serial.write(0xDD);
+  Serial.print("ld: ");
+  Serial.print(ldiff);
+  Serial.print(" rd: ");
+  Serial.print(rdiff);
+  Serial.print(" d: ");
+  Serial.print(disp);
+  Serial.print(" ad: ");
+  Serial.print((ldiff - rdiff)/WHEEL_DISTANCE);
+  Serial.print(" l: ");
+  Serial.print(encoderTicksLeft);
+  Serial.print(" pl: ");
+  Serial.print(encoderTicksLeftPrev);
+  Serial.print(" r: ");
+  Serial.print(encoderTicksRight);
+  Serial.print(" pr: ");
+  Serial.print(encoderTicksRightPrev);
+  Serial.println();
+  Serial.write(0);
   
   // Serial.print(" x: ");
   // Serial.print(xPos);
@@ -116,7 +132,6 @@ void odom(){
   // Serial.print(yPos);
   // Serial.print(" angle: ");
   // Serial.print(angle);
-  // Serial.write(0);
 }
 
 void loop() {
@@ -178,7 +193,7 @@ void loop() {
   // Serial.print(errorRight);
   // Serial.print("]");
 
-
-  motorLeft.run(constrain(errorLeft, -255, 255));
-  motorRight.run(constrain(-errorRight, -255, 255));
+  #define MAX_SPEED 150
+  motorLeft.run(constrain(errorLeft, -MAX_SPEED, MAX_SPEED));
+  motorRight.run(constrain(-errorRight, -MAX_SPEED, MAX_SPEED));
 }
