@@ -15,6 +15,7 @@ public class GravemindControlPanel extends JFrame{
     public GravemindControlPanel(Robot robot){
         this.robot = robot;
         robot.addMovementListener(mapGenerator::addPosition);
+        robot.addMovementListener(System.out::println);
 
         this.setTitle("Gravemind Control Panel");
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);

@@ -24,6 +24,7 @@ public class MapGenerator{
                 g.fillRect(0, 0, getWidth(), getHeight());  // Set the background to black
                 g.setColor(Color.WHITE);
                 g.translate(width/2, height/2);
+                ((Graphics2D)g).scale(1, -1);
 
                 // Draw the origin point
                 g.fillOval(- 5, - 5, 10, 10); // Drawing the origin (starting point)
@@ -44,5 +45,14 @@ public class MapGenerator{
         frame.setSize(width, height);  // Set window size
         frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         frame.setVisible(true);
+    }
+
+    public static void main(String ... args){
+        var gen = new MapGenerator();
+        gen.addPosition(new Position(0,0,0));
+        gen.addPosition(new Position(0,50,0));
+        gen.addPosition(new Position(50,100,0));
+        gen.addPosition(new Position(100,75,0));
+        gen.show();
     }
 }
