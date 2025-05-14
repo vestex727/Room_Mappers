@@ -6,11 +6,11 @@ import java.awt.*;
 public class MapGenerator{
     private ArrayList<Position> positions = new ArrayList<>();
 
-    public void addPosition(Position position) {
+    public synchronized void addPosition(Position position) {
         positions.add(position);
     }
 
-    public void show(){
+    public synchronized void show(){
         final int width = 500;
         final int height = 500;
         var panel = new JPanel(){

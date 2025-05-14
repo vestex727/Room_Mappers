@@ -7,6 +7,16 @@ import java.util.ArrayList;
 public class Robot implements AutoCloseable{
     private final SerialPort port;
     private final ArrayList<MovementListener> movementListeners = new ArrayList<>();
+    private final ArrayList<NearListener> nearListeners = new ArrayList<>();
+    private final ArrayList<CommandAwkListener> commandAwkListeners = new ArrayList<>();
+
+    public interface CommandAwkListener{
+        void handle(int commandId);
+    }
+
+    public interface NearListener{
+        void handle(boolean near);
+    }
 
     public interface MovementListener{
         void handle(Position m);
@@ -22,6 +32,18 @@ public class Robot implements AutoCloseable{
         }
 
         new Thread(this::readLoop).start();
+    }
+
+    public void addCommandAwkListener(CommandAwkListener listener){
+        synchronized (commandAwkListeners){
+            commandAwkListeners.add(listener);
+        }
+    }
+
+    public void addNearListener(NearListener listener){
+        synchronized (nearListeners){
+            nearListeners.add(listener);
+        }
     }
 
     public void addMovementListener(MovementListener listener){
@@ -62,7 +84,9 @@ public class Robot implements AutoCloseable{
                 switch (type){
                     case 0xAA -> { // response to command
                         int command = readByte();
-                        System.out.printf("Received -> Command %d\n", command);
+                        synchronized (commandAwkListeners){
+                            for(var listener : commandAwkListeners) listener.handle(command);
+                        }
                     }
                     case 0xBB -> { // movement data
                         ByteBuffer bb = ByteBuffer.wrap(readBytes(12)).order(ByteOrder.LITTLE_ENDIAN);
@@ -73,7 +97,9 @@ public class Robot implements AutoCloseable{
                     }
                     case 0xCC -> { // distance sensor
                         var near = readByte()!=0;
-                        System.out.println("Received -> Near: " + near);
+                        synchronized (nearListeners){
+                            for(var listener : nearListeners) listener.handle(near);
+                        }
                     }
                     case 0xDD -> { //debug
                         while(true){
@@ -82,7 +108,6 @@ public class Robot implements AutoCloseable{
                             System.err.print((char)in);
                         }
                     }
-                    case 0 -> {}
                     case -1 -> { // end of stream
                         Thread.sleep(10);
                         System.out.println("End of stream");
