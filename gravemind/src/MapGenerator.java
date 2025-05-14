@@ -43,12 +43,12 @@ public class MapGenerator{
                         g.drawLine(
                                 (int) data.pos().x(),
                                 (int) data.pos().y(),
-                                (int) (data.pos().x() + data.distance*Math.cos(data.pos.angle())),
-                                (int) (data.pos().y() + data.distance*Math.sin(data.pos.angle()))
+                                (int) (data.pos().x() + data.distance*Math.cos(data.pos.angle() + Math.PI/2)),
+                                (int) (data.pos().y() + data.distance*Math.sin(data.pos.angle() + Math.PI/2))
                         );
                     }
                 }
-                
+
                 float cx = 0;
                 float cy = 0;
                 ((Graphics2D) g).setStroke(new BasicStroke(2));
