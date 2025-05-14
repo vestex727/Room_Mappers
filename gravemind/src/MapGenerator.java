@@ -41,10 +41,17 @@ public class MapGenerator{
                 float cy = 0;
                 synchronized (MapGenerator.this){
                     for (var data : data) {
-                        g.setColor(Color.GREEN);
-                        g.drawLine((int) cx, (int) cy, (int) data.pos().x(), (int) data.pos().y());
                         g.setColor(Color.YELLOW);
                         g.drawLine((int) cx, (int) cy, (int) (cx + data.distance*Math.cos(data.pos.angle())), (int) (cy + data.distance*Math.sin(data.pos.angle())));
+                        cx = data.pos().x();
+                        cy = data.pos().y();
+                    }
+                }
+                ((Graphics2D) g).setStroke(new BasicStroke(2));
+                synchronized (MapGenerator.this){
+                    for (var data : data) {
+                        g.setColor(Color.RED);
+                        g.drawLine((int) cx, (int) cy, (int) data.pos().x(), (int) data.pos().y());
                         cx = data.pos().x();
                         cy = data.pos().y();
                     }
