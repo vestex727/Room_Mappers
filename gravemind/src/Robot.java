@@ -79,7 +79,6 @@ public class Robot implements AutoCloseable{
     }
 
     private byte[] readBytes(int number){
-
         try {
             return port.getInputStreamWithSuppressedTimeoutExceptions().readNBytes(number);
         } catch (IOException e) {

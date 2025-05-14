@@ -1,9 +1,5 @@
 #include <MeOrion.h>
 #include <math.h>
-#include <SoftwareSerial.h>
-
-
-MeBluetooth bluetooth(PORT_5);
 
 #include <Wire.h>
 #include "Adafruit_VL53L0X.h"
@@ -12,8 +8,6 @@ Adafruit_VL53L0X lox = Adafruit_VL53L0X();
 
 MeDCMotor motorLeft(M1);
 MeDCMotor motorRight(M2);
-
-bool sensorIsOn = false;
 
 // Encoder pins
 const int ENCODER_RIGHT_A = 8;
@@ -65,7 +59,6 @@ void handleRightEncoder() {
 
 void setup() {
   Serial.begin(115200);
-  bluetooth.begin(115200);
 
   pinMode(ENCODER_LEFT_A, INPUT_PULLUP);
   pinMode(ENCODER_LEFT_B, INPUT_PULLUP);
@@ -108,47 +101,46 @@ void odom(){
 
   xPos += (float)cos(angle)*disp;
   yPos += (float)sin(angle)*disp;
-  
-  float sensor = (sensorIsOn ? 1 : 0);
-  bluetooth.write(0xBB);
-  float response[3] = { xPos, yPos, angle };
-  bluetooth.write((uint8_t*)response, sizeof(response));
 
-  // bluetooth.write(0xDD);
-  // bluetooth.print("ld: ");
-  // bluetooth.print(ldiff);
-  // bluetooth.print(" rd: ");
-  // bluetooth.print(rdiff);
-  // bluetooth.print(" d: ");
-  // bluetooth.print(disp);
-  // bluetooth.print(" ad: ");
-  // bluetooth.print((ldiff - rdiff)/WHEEL_DISTANCE);
-  // bluetooth.print(" l: ");
-  // bluetooth.print(encoderTicksLeft);
-  // bluetooth.print(" pl: ");
-  // bluetooth.print(encoderTicksLeftPrev);
-  // bluetooth.print(" r: ");
-  // bluetooth.print(encoderTicksRight);
-  // bluetooth.print(" pr: ");
-  // bluetooth.print(encoderTicksRightPrev);
-  // bluetooth.println();
-  // bluetooth.write(0);
+  Serial.write(0xBB);
+  float response[3] = { xPos, yPos, angle };
+  Serial.write((uint8_t*)response, sizeof(response));
+
+  Serial.write(0xDD);
+  Serial.print("ld: ");
+  Serial.print(ldiff);
+  Serial.print(" rd: ");
+  Serial.print(rdiff);
+  Serial.print(" d: ");
+  Serial.print(disp);
+  Serial.print(" ad: ");
+  Serial.print((ldiff - rdiff)/WHEEL_DISTANCE);
+  Serial.print(" l: ");
+  Serial.print(encoderTicksLeft);
+  Serial.print(" pl: ");
+  Serial.print(encoderTicksLeftPrev);
+  Serial.print(" r: ");
+  Serial.print(encoderTicksRight);
+  Serial.print(" pr: ");
+  Serial.print(encoderTicksRightPrev);
+  Serial.println();
+  Serial.write(0);
   
-  // bluetooth.print(" x: ");
-  // bluetooth.print(xPos);
-  // bluetooth.print(" y: ");
-  // bluetooth.print(yPos);
-  // bluetooth.print(" angle: ");
-  // bluetooth.print(angle);
+  // Serial.print(" x: ");
+  // Serial.print(xPos);
+  // Serial.print(" y: ");
+  // Serial.print(yPos);
+  // Serial.print(" angle: ");
+  // Serial.print(angle);
 }
 
 void loop() {
-  if (bluetooth.available()) {
+  if (Serial.available()) {
     // char buff[256];
     // int read = Serial.readBytes(buff, sizeof(buff));
     // Serial.write(buff, read);
 
-    int32_t input = bluetooth.read();
+    int32_t input = Serial.read();
 
     switch (input) {
       case 0:
@@ -173,15 +165,15 @@ void loop() {
         break;
     }
 
-    bluetooth.write(0xAA);
-    bluetooth.write(input); 
+    Serial.write(0xAA);
+    Serial.write(input); 
   }
 
   odom();
 
    if (lox.isRangeComplete()) {
-      // bluetooth.write(0xCC);
-      // bluetooth.write(lox.readRange()<500);
+      Serial.write(0xCC);
+      Serial.write(lox.readRange()<500);
   }
   // Serial.print(" ");
   // Serial.print(encoderTicksLeft);
