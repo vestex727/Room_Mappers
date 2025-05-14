@@ -9,6 +9,8 @@ Adafruit_VL53L0X lox = Adafruit_VL53L0X();
 MeDCMotor motorLeft(M1);
 MeDCMotor motorRight(M2);
 
+bool sensorIsOn = false;
+
 // Encoder pins
 const int ENCODER_RIGHT_A = 8;
 const int ENCODER_RIGHT_B = 2;  // INT0
@@ -101,30 +103,30 @@ void odom(){
 
   xPos += (float)cos(angle)*disp;
   yPos += (float)sin(angle)*disp;
-
+  float sensor = (sensorIsOn ? 1 : 0);
   Serial.write(0xBB);
-  float response[3] = { xPos, yPos, angle };
+  float response[3] = { xPos, yPos,  sensor};
   Serial.write((uint8_t*)response, sizeof(response));
 
-  Serial.write(0xDD);
-  Serial.print("ld: ");
-  Serial.print(ldiff);
-  Serial.print(" rd: ");
-  Serial.print(rdiff);
-  Serial.print(" d: ");
-  Serial.print(disp);
-  Serial.print(" ad: ");
-  Serial.print((ldiff - rdiff)/WHEEL_DISTANCE);
-  Serial.print(" l: ");
-  Serial.print(encoderTicksLeft);
-  Serial.print(" pl: ");
-  Serial.print(encoderTicksLeftPrev);
-  Serial.print(" r: ");
-  Serial.print(encoderTicksRight);
-  Serial.print(" pr: ");
-  Serial.print(encoderTicksRightPrev);
-  Serial.println();
-  Serial.write(0);
+  // Serial.write(0xDD);
+  // Serial.print("ld: ");
+  // Serial.print(ldiff);
+  // Serial.print(" rd: ");
+  // Serial.print(rdiff);
+  // Serial.print(" d: ");
+  // Serial.print(disp);
+  // Serial.print(" ad: ");
+  // Serial.print((ldiff - rdiff)/WHEEL_DISTANCE);
+  // Serial.print(" l: ");
+  // Serial.print(encoderTicksLeft);
+  // Serial.print(" pl: ");
+  // Serial.print(encoderTicksLeftPrev);
+  // Serial.print(" r: ");
+  // Serial.print(encoderTicksRight);
+  // Serial.print(" pr: ");
+  // Serial.print(encoderTicksRightPrev);
+  // Serial.println();
+  // Serial.write(0);
   
   // Serial.print(" x: ");
   // Serial.print(xPos);
@@ -172,8 +174,10 @@ void loop() {
   odom();
 
    if (lox.isRangeComplete()) {
-      Serial.write(0xCC);
-      Serial.write(lox.readRange()<500);
+      //Serial.write(0xCC);
+      //Serial.write(lox.readRange()<500);
+      sensorIsOn = (lox.readRange()<500);
+
   }
   // Serial.print(" ");
   // Serial.print(encoderTicksLeft);
