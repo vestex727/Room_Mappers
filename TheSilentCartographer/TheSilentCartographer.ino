@@ -15,6 +15,7 @@ const int ENCODER_RIGHT_B = 2;  // INT0
 const int ENCODER_LEFT_A = 9;
 const int ENCODER_LEFT_B = 3;  // INT1
 
+const int32_t ticks_per_rotation = 506*2;
 
 int32_t targetEncoderLeft = 0;
 int32_t targetEncoderRight = 0;
@@ -91,8 +92,8 @@ void debugEncoders(){
 
 void odom(){
 
-  float ldiff = (encoderTicksLeft-encoderTicksLeftPrev)*WHEEL_CIRCUM/506.0f;
-  float rdiff = (encoderTicksRight-encoderTicksRightPrev)*WHEEL_CIRCUM/506.0f;
+  float ldiff = (encoderTicksLeft-encoderTicksLeftPrev)*WHEEL_CIRCUM/(float)ticks_per_rotation;
+  float rdiff = (encoderTicksRight-encoderTicksRightPrev)*WHEEL_CIRCUM/(float)ticks_per_rotation;
   encoderTicksLeftPrev = encoderTicksLeft;
   encoderTicksRightPrev = encoderTicksRight;
 
@@ -149,20 +150,20 @@ void loop() {
         targetEncoderRight = encoderTicksRight;
         break;
       case 1:
-        targetEncoderLeft += 506;
-        targetEncoderRight += 506;
+        targetEncoderLeft += ticks_per_rotation;
+        targetEncoderRight += ticks_per_rotation;
         break;
       case 2:
-        targetEncoderLeft -= 506;
-        targetEncoderRight -= 506;
+        targetEncoderLeft -= ticks_per_rotation;
+        targetEncoderRight -= ticks_per_rotation;
         break;
       case 3:
-        targetEncoderLeft += 506;
-        targetEncoderRight -= 506;
+        targetEncoderLeft += ticks_per_rotation;
+        targetEncoderRight -= ticks_per_rotation;
         break;
       case 4:
-        targetEncoderLeft -= 506;
-        targetEncoderRight += 506;
+        targetEncoderLeft -= ticks_per_rotation;
+        targetEncoderRight += ticks_per_rotation;
         break;
     }
 
