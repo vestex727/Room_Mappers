@@ -102,29 +102,30 @@ void odom(){
   xPos += (float)cos(angle)*disp;
   yPos += (float)sin(angle)*disp;
 
+  
   Serial.write(0xBB);
   float response[3] = { xPos, yPos, angle };
   Serial.write((uint8_t*)response, sizeof(response));
 
-  Serial.write(0xDD);
-  Serial.print("ld: ");
-  Serial.print(ldiff);
-  Serial.print(" rd: ");
-  Serial.print(rdiff);
-  Serial.print(" d: ");
-  Serial.print(disp);
-  Serial.print(" ad: ");
-  Serial.print((ldiff - rdiff)/WHEEL_DISTANCE);
-  Serial.print(" l: ");
-  Serial.print(encoderTicksLeft);
-  Serial.print(" pl: ");
-  Serial.print(encoderTicksLeftPrev);
-  Serial.print(" r: ");
-  Serial.print(encoderTicksRight);
-  Serial.print(" pr: ");
-  Serial.print(encoderTicksRightPrev);
-  Serial.println();
-  Serial.write(0);
+  // Serial.write(0xDD);
+  // Serial.print("ld: ");
+  // Serial.print(ldiff);
+  // Serial.print(" rd: ");
+  // Serial.print(rdiff);
+  // Serial.print(" d: ");
+  // Serial.print(disp);
+  // Serial.print(" ad: ");
+  // Serial.print((ldiff - rdiff)/WHEEL_DISTANCE);
+  // Serial.print(" l: ");
+  // Serial.print(encoderTicksLeft);
+  // Serial.print(" pl: ");
+  // Serial.print(encoderTicksLeftPrev);
+  // Serial.print(" r: ");
+  // Serial.print(encoderTicksRight);
+  // Serial.print(" pr: ");
+  // Serial.print(encoderTicksRightPrev);
+  // Serial.println();
+  // Serial.write(0);
   
   // Serial.print(" x: ");
   // Serial.print(xPos);
@@ -173,7 +174,8 @@ void loop() {
 
    if (lox.isRangeComplete()) {
       Serial.write(0xCC);
-      Serial.write(lox.readRange()<500);
+      uint16_t value = lox.readRange();
+      Serial.write((uint8_t*)&value, sizeof(value));
   }
   // Serial.print(" ");
   // Serial.print(encoderTicksLeft);

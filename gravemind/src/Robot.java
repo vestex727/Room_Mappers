@@ -1,9 +1,6 @@
 import com.fazecast.jSerialComm.SerialPort;
-import com.fazecast.jSerialComm.SerialPortDataListener;
-import com.fazecast.jSerialComm.SerialPortEvent;
 
 import java.io.IOException;
-import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
@@ -11,15 +8,15 @@ import java.util.ArrayList;
 public class Robot implements AutoCloseable{
     private final SerialPort port;
     private final ArrayList<MovementListener> movementListeners = new ArrayList<>();
-    private final ArrayList<NearListener> nearListeners = new ArrayList<>();
+    private final ArrayList<DistanceListener> distanceListeners = new ArrayList<>();
     private final ArrayList<CommandAwkListener> commandAwkListeners = new ArrayList<>();
 
     public interface CommandAwkListener{
         void handle(int commandId);
     }
 
-    public interface NearListener{
-        void handle(boolean near);
+    public interface DistanceListener {
+        void handle(float near);
     }
 
     public interface MovementListener{
@@ -28,11 +25,11 @@ public class Robot implements AutoCloseable{
 
     public Robot(String port, int baud){
         this.port = SerialPort.getCommPort(port);
-        this.port.setComPortParameters(baud, 8, 1, 0);
-        this.port.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING | SerialPort.TIMEOUT_WRITE_BLOCKING, 500000, 500000);
+        this.port.setBaudRate(baud);
+//        this.port.setComPortParameters(baud, 8, 1, 0);
+        this.port.setComPortTimeouts(SerialPort.TIMEOUT_WRITE_BLOCKING | SerialPort.TIMEOUT_READ_BLOCKING, 50000, 50000);
 
-
-        if (!this.port.openPort()) {
+        if (!this.port.openPort(50, 4096, 4096)) {
             throw new RuntimeException("Failed to open port");
         }
 
@@ -45,9 +42,9 @@ public class Robot implements AutoCloseable{
         }
     }
 
-    public void addNearListener(NearListener listener){
-        synchronized (nearListeners){
-            nearListeners.add(listener);
+    public void addDistanceListener(DistanceListener listener){
+        synchronized (distanceListeners){
+            distanceListeners.add(listener);
         }
     }
 
@@ -105,9 +102,9 @@ public class Robot implements AutoCloseable{
                         }
                     }
                     case 0xCC -> { // distance sensor
-                        var near = readByte()!=0;
-                        synchronized (nearListeners){
-                            for(var listener : nearListeners) listener.handle(near);
+                        var near = (float)ByteBuffer.wrap(readBytes(2)).order(ByteOrder.LITTLE_ENDIAN).getShort();
+                        synchronized (distanceListeners){
+                            for(var listener : distanceListeners) listener.handle(near);
                         }
                     }
                     case 0xDD -> { //debug
@@ -119,7 +116,7 @@ public class Robot implements AutoCloseable{
                     }
                     case -1 -> { // end of stream
                         Thread.sleep(10);
-                        System.out.println("End of stream");
+//                        System.out.println("End of stream");
 //                        return;
                     }
                     default -> System.out.println("Invalid receiving command type: " + type);

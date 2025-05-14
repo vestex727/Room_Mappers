@@ -4,10 +4,18 @@ import java.awt.*;
 
 
 public class MapGenerator{
-    private ArrayList<Position> positions = new ArrayList<>();
+    private ArrayList<Data> data = new ArrayList<>();
+    private float distance = 0.0f;
+
+    private record Data(Position pos, float distance){
+    }
 
     public synchronized void addPosition(Position position) {
-        positions.add(position);
+        data.add(new Data(position, distance));
+    }
+
+    public synchronized void updateDistance(float distance){
+        this.distance = distance;
     }
 
     public synchronized void show(){
@@ -31,10 +39,13 @@ public class MapGenerator{
 
                 float cx = 0;
                 float cy = 0;
-                for (var pos : positions) {
-                    if(pos.angle() == 1) g.drawLine((int) cx, (int) cy, (int) pos.x(), (int) pos.y());
-                    cx = pos.x();
-                    cy = pos.y();
+                for (var data : data) {
+                    g.setColor(Color.GREEN);
+                    g.drawLine((int) cx, (int) cy, (int) data.pos().x(), (int) data.pos().y());
+                    g.setColor(Color.YELLOW);
+                    g.drawLine((int) cx, (int) cy, (int) (cx + data.distance*Math.cos(data.pos.angle())), (int) (cy + data.distance*Math.sin(data.pos.angle())));
+                    cx = data.pos().x();
+                    cy = data.pos().y();
                 }
             }
         };

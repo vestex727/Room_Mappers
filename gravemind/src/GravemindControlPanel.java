@@ -11,8 +11,9 @@ public class GravemindControlPanel extends JFrame{
     public GravemindControlPanel(Robot robot){
         this.robot = robot;
         robot.addMovementListener(mapGenerator::addPosition);
+        robot.addDistanceListener(mapGenerator::updateDistance);
         robot.addMovementListener(System.out::println);
-//        robot.addNearListener(near -> System.out.println("Near[" + near + "]"));
+//        robot.addNearListener(distance -> System.out.println("Distance[" + distance + "]"));
 //        robot.addCommandAwkListener(command -> System.out.println("Command Awk[" + command + "]"));
 
         this.setTitle("Gravemind Control Panel");
