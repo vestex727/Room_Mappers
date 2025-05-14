@@ -38,8 +38,9 @@ public class Robot implements AutoCloseable{
 
     private byte[] readBytes(int number){
         var b = new byte[number];
-        var read = port.readBytes(b, 1);
+        var read = port.readBytes(b, number);
         if(read == -1)return null;
+        if(read != number)throw new RuntimeException("Wrong number of bytes read");
         return b;
     }
 
