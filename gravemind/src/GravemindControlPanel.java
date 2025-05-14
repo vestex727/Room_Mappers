@@ -1,14 +1,10 @@
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.util.ArrayList;
 
 public class GravemindControlPanel extends JFrame{
-    private ArrayList<Position> movements = new ArrayList<>();
-    private boolean SensorIsOn = false;
-
-    private Robot robot;
-    private MapGenerator mapGenerator = new MapGenerator();
+    private final Robot robot;
+    private final MapGenerator mapGenerator = new MapGenerator();
 
     private JTextField inputField;
 
@@ -94,7 +90,6 @@ public class GravemindControlPanel extends JFrame{
 
             @Override
             public void keyReleased(KeyEvent e) {
-                simulateSensor(e);
                 robot.send(Command.Stop);
             }
         });
@@ -123,14 +118,6 @@ public class GravemindControlPanel extends JFrame{
             default:
         };
         return null;
-    }
-
-    void simulateSensor(KeyEvent e){
-        if(e.getKeyCode() == KeyEvent.VK_C) {
-            SensorIsOn = !SensorIsOn;
-            System.out.println(SensorIsOn);
-        }
-        if(e.getKeyCode() == KeyEvent.VK_M) mapGenerator.show();
     }
 
     public static void main(String[] args) {
