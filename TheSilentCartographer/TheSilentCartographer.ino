@@ -149,20 +149,20 @@ void loop() {
         targetEncoderRight = encoderTicksRight;
         break;
       case 1:
-        targetEncoderLeft += 500;
-        targetEncoderRight += 500;
+        targetEncoderLeft += 506;
+        targetEncoderRight += 506;
         break;
       case 2:
-        targetEncoderLeft -= 500;
-        targetEncoderRight -= 500;
+        targetEncoderLeft -= 506;
+        targetEncoderRight -= 506;
         break;
       case 3:
-        targetEncoderLeft += 500;
-        targetEncoderRight -= 500;
+        targetEncoderLeft += 506;
+        targetEncoderRight -= 506;
         break;
       case 4:
-        targetEncoderLeft -= 500;
-        targetEncoderRight += 500;
+        targetEncoderLeft -= 506;
+        targetEncoderRight += 506;
         break;
     }
 

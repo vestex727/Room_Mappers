@@ -15,7 +15,7 @@ public class MapGenerator{
     }
 
     public synchronized void updateDistance(float distance){
-        if(distance>2000)this.distance=0;
+        if(distance>1500)this.distance=0;
         else this.distance = distance;
     }
 
